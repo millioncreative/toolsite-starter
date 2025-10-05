@@ -1,8 +1,6 @@
-import { defineConfig } from 'vitest/config';
-
-export default defineConfig({
+export default {
   test: {
     environment: 'happy-dom',
-    include: ['src/**/*.test.{js,ts}']
+    setupFiles: ['./tests/setup.ts']
   }
-});
+};

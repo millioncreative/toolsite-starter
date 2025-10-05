@@ -32,8 +32,7 @@
 │   │   ├── Header.astro
 │   │   ├── PrivacyNotice.astro
 │   │   ├── ToolCard.astro
-│   │   └── __tests__/
-│   │       └── ToolCard.test.ts
+│   │   └── toolCardTemplate.ts
 │   ├── content/
 │   │   ├── blog/
 │   │   │   ├── privacy.md
@@ -53,7 +52,9 @@
 │       └── global.css
 ├── tailwind.config.mjs
 ├── tests/
-│   └── e2e.spec.ts
+│   ├── e2e.spec.ts
+│   ├── setup.ts
+│   └── toolcard.test.ts
 ├── tsconfig.json
 ├── tsconfig.node.json
 └── vitest.config.ts
