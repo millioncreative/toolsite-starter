@@ -11,6 +11,8 @@
 ├── astro.config.mjs
 ├── codex/
 │   └── structure.md
+├── e2e/
+│   └── basic.spec.ts
 ├── lighthouserc.json
 ├── package-lock.json
 ├── package.json
@@ -52,7 +54,6 @@
 │       └── global.css
 ├── tailwind.config.mjs
 ├── tests/
-│   ├── e2e.spec.ts
 │   ├── setup.ts
 │   └── toolcard.test.ts
 ├── tsconfig.json
