@@ -11,13 +11,17 @@ test.describe('localized routes', () => {
     test(`${locale} home renders`, async ({ page }) => {
       await page.goto(`/${locale}/`);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-      await expect(page.getByRole('link', { name: labels[locale].blog })).toBeVisible();
+      await expect(
+        page.getByRole('link', { name: labels[locale].blog, exact: true })
+      ).toBeVisible();
     });
 
     test(`${locale} tools renders`, async ({ page }) => {
       await page.goto(`/${locale}/tools/`);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-      await expect(page.getByRole('link', { name: labels[locale].tools })).toBeVisible();
+      await expect(
+        page.getByRole('link', { name: labels[locale].tools, exact: true })
+      ).toBeVisible();
       await expect(page).toHaveURL(new RegExp(`/${locale}/tools/`));
     });
   }

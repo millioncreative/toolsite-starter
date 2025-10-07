@@ -16,10 +16,12 @@ if (!isLocale(lang)) {
 const locale = lang as Locale;
 const dict = await getDictionary(locale);
 const dateLocale = locale === 'zh' ? 'zh-CN' : 'en-US';
+const getSlugSegment = (entrySlug: string) => entrySlug.split('/').pop() ?? entrySlug;
+const getPublishedTime = (date?: Date) => (date ? date.getTime() : 0);
 const posts = (
   await getCollection('blog', (entry) => entry.id.startsWith(`${locale}/`))
 )
-  .sort((a, b) => b.data.published.getTime() - a.data.published.getTime())
+  .sort((a, b) => getPublishedTime(b.data.pubDate) - getPublishedTime(a.data.pubDate))
   .slice(0, 3);
 ---
 <BaseLayout lang={locale} dict={dict}>
@@ -55,8 +57,16 @@ const posts = (
         <article class="blog-card">
           <h3>{post.data.title}</h3>
           <p>{post.data.description}</p>
-          <p class="blog-card__meta">{dict.blog.publishedOn} {post.data.published.toLocaleDateString(dateLocale)}</p>
-          <a href={`/${locale}/blog/${post.slug}/`} class="blog-card__cta">{dict.blog.readMore}</a>
+          <p class="blog-card__meta">
+            {dict.blog.publishedOn}{' '}
+            {post.data.pubDate ? post.data.pubDate.toLocaleDateString(dateLocale) : ''}
+          </p>
+          <a
+            href={`/${locale}/blog/${getSlugSegment(post.slug)}/`}
+            class="blog-card__cta"
+          >
+            {dict.blog.readMore}
+          </a>
         </article>
       ))}
     </div>

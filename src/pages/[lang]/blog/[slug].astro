@@ -1,21 +1,22 @@
 ---
-export const prerender = true;
-
 import BaseLayout from '../../../../layouts/BaseLayout.astro';
 import { getDictionary, isLocale } from '../../../../i18n';
 import type { Locale } from '../../../../i18n/config';
 import { getCollection } from 'astro:content';
-import { locales } from '../../../../lib/i18n';
+import { getI18nStaticPaths } from '../../../../lib/i18n';
+
+export const prerender = true;
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
-  return locales.flatMap((lang) =>
-    posts
-      .filter((post) => post.data.lang === lang)
-      .map((post) => ({
-        params: { lang, slug: post.slug }
-      }))
-  );
+
+  return getI18nStaticPaths().flatMap(({ params: { lang } }) => {
+    const entries = posts.filter((post) => post.id.startsWith(`${lang}/`));
+
+    return entries.map((post) => ({
+      params: { lang, slug: post.slug.split('/').pop() ?? post.slug }
+    }));
+  });
 }
 
 const { lang, slug } = Astro.params;
@@ -26,7 +27,7 @@ if (!isLocale(lang)) {
 
 const locale = lang as Locale;
 const posts = await getCollection('blog', ({ id }) => id.startsWith(`${locale}/`));
-const entry = posts.find((post) => post.slug === slug);
+const entry = posts.find((post) => (post.slug.split('/').pop() ?? post.slug) === slug);
 
 if (!entry) {
   return Astro.redirect(`/${locale}/blog/`);
@@ -36,7 +37,9 @@ const post = entry;
 
 const dict = await getDictionary(locale);
 const dateLocale = locale === 'zh' ? 'zh-CN' : 'en-US';
-const published = post.data.published.toLocaleDateString(dateLocale);
+const published = post.data.pubDate
+  ? post.data.pubDate.toLocaleDateString(dateLocale)
+  : '';
 ---
 <BaseLayout lang={locale} dict={dict} title={post.data.title} description={post.data.description}>
   <article class="post">

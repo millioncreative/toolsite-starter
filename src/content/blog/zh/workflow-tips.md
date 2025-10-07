@@ -1,9 +1,8 @@
 ---
 title: 设计与开发协作技巧
 description: 利用评审节奏与工具清单，让跨职能团队更高效。
-slug: workflow-tips-zh
 lang: zh
-published: 2024-04-02
+pubDate: 2024-04-02
 ---
 
 ## 设定评审节奏
