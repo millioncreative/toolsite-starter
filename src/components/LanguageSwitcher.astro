@@ -1,0 +1,65 @@
+---
+import type { Locale } from '../i18n/config';
+import { getAlternateLocale } from '../i18n';
+
+interface Props {
+  lang: Locale;
+  path: string;
+  label: string;
+  alternateLabel: string;
+}
+
+const { lang, path, label, alternateLabel } = Astro.props;
+const alternateLocale = getAlternateLocale(lang);
+const match = /^\/(zh|en)(\/.*)?$/.exec(path);
+const restPath = match?.[2] ?? '/';
+const href = `/${alternateLocale}${restPath}`;
+---
+<a
+  href={href}
+  class="language-switcher"
+  data-target-locale={alternateLocale}
+>
+  <span>{label}</span>
+  <span aria-hidden="true" class="language-switcher__divider">·</span>
+  <span>{alternateLabel}</span>
+</a>
+<style>
+  .language-switcher {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+    border-radius: 9999px;
+    padding: 0.25rem 0.75rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .language-switcher:hover {
+    background: color-mix(in srgb, currentColor 15%, transparent);
+  }
+
+  .language-switcher__divider {
+    opacity: 0.6;
+  }
+</style>
+<script>
+  const anchor = document.currentScript?.previousElementSibling;
+  if (anchor instanceof HTMLAnchorElement) {
+    anchor.addEventListener('click', () => {
+      const locale = anchor.dataset.targetLocale;
+      if (!locale) return;
+      try {
+        window.localStorage.setItem('locale', locale);
+      } catch (error) {
+        console.warn('Failed to persist locale in localStorage', error);
+      }
+      const maxAge = 60 * 60 * 24 * 365;
+      const expires = new Date(Date.now() + maxAge * 1000).toUTCString();
+      document.cookie = `locale=${locale};path=/;expires=${expires};samesite=lax`;
+    });
+  }
+</script>

@@ -1,0 +1,21 @@
+---
+import type { Dictionary } from '../i18n';
+
+interface Props {
+  dict: Dictionary;
+}
+
+const { dict } = Astro.props;
+---
+<footer class="site-footer">
+  <p>{dict.footer.copyright}</p>
+</footer>
+<style>
+  .site-footer {
+    margin-top: 4rem;
+    padding: 2rem 0;
+    border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+    font-size: 0.875rem;
+    color: color-mix(in srgb, currentColor 70%, transparent);
+  }
+</style>

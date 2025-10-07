@@ -1,0 +1,82 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import PrivacyBanner from '../components/PrivacyBanner.astro';
+import type { Dictionary } from '../i18n';
+import type { Locale } from '../i18n/config';
+import { defaultLocale } from '../i18n/config';
+import { getAlternateLocale } from '../i18n';
+
+interface Props {
+  lang: Locale;
+  dict: Dictionary;
+  title?: string;
+  description?: string;
+}
+
+const { lang, dict, title, description } = Astro.props;
+const pageTitle = title ? `${title} · ${dict.meta.siteName}` : dict.meta.defaultTitle;
+const pageDescription = description ?? dict.meta.description;
+const alternateLocale = getAlternateLocale(lang);
+const url = Astro.url;
+const site = Astro.site ?? new URL(url.origin);
+const relativePath = url.pathname.replace(/^\/(zh|en)/, '') || '/';
+const canonical = new URL(`/${lang}${relativePath}`, site).toString();
+const alternateHref = new URL(`/${alternateLocale}${relativePath}`, site).toString();
+const defaultHref = new URL(`/${defaultLocale}${relativePath}`, site).toString();
+const ogLocale = lang === 'zh' ? 'zh_CN' : 'en_US';
+---
+<!DOCTYPE html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:locale" content={ogLocale} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang={lang} href={canonical} />
+    <link rel="alternate" hreflang={alternateLocale} href={alternateHref} />
+    <link rel="alternate" hreflang="x-default" href={defaultHref} />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: #f8fafc;
+        color: #0f172a;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .page-container {
+        margin: 0 auto;
+        max-width: 960px;
+        padding: 0 1.5rem 4rem;
+      }
+
+      main {
+        display: grid;
+        gap: 3rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-container">
+      <Header lang={lang} dict={dict} path={url.pathname} />
+      <main>
+        <slot />
+      </main>
+      <Footer dict={dict} />
+    </div>
+    <PrivacyBanner dict={dict} />
+  </body>
+</html>

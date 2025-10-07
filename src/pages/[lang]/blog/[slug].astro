@@ -1,0 +1,52 @@
+---
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import { getDictionary } from '../../../../i18n';
+import type { Locale } from '../../../../i18n/config';
+import { getCollection, type CollectionEntry } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map((post) => ({
+    params: { lang: post.data.lang, slug: post.data.slug },
+    props: { post }
+  }));
+}
+
+const { lang } = Astro.params;
+const { post } = Astro.props as { post: CollectionEntry<'blog'> };
+const locale = lang as Locale;
+const dict = await getDictionary(locale);
+const dateLocale = locale === 'zh' ? 'zh-CN' : 'en-US';
+const published = post.data.published.toLocaleDateString(dateLocale);
+---
+<BaseLayout lang={locale} dict={dict} title={post.data.title} description={post.data.description}>
+  <article class="post">
+    <header class="post__header">
+      <p class="post__meta">{dict.blog.publishedOn} {published}</p>
+      <h1>{post.data.title}</h1>
+      <p class="post__description">{post.data.description}</p>
+    </header>
+    <section class="post__content">
+      <post.Content />
+    </section>
+  </article>
+</BaseLayout>
+<style>
+  .post {
+    display: grid;
+    gap: 2rem;
+  }
+
+  .post__meta {
+    color: color-mix(in srgb, currentColor 65%, transparent);
+    font-size: 0.875rem;
+  }
+
+  .post__content :global(p) {
+    line-height: 1.8;
+  }
+
+  .post__content :global(h2) {
+    margin-top: 2rem;
+  }
+</style>

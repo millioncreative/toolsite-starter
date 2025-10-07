@@ -1,0 +1,76 @@
+---
+import LanguageSwitcher from './LanguageSwitcher.astro';
+import type { Dictionary } from '../i18n';
+import type { Locale } from '../i18n/config';
+import { getAlternateLocale } from '../i18n';
+
+interface Props {
+  lang: Locale;
+  dict: Dictionary;
+  path: string;
+}
+
+const { lang, dict, path } = Astro.props;
+const base = `/${lang}`;
+const alternateLocale = getAlternateLocale(lang);
+---
+<header class="site-header">
+  <a href={base + '/'} class="site-header__logo">{dict.meta.siteName}</a>
+  <nav class="site-header__nav">
+    <a class="site-header__nav-link" href={base + '/'}>{dict.nav.home}</a>
+    <a class="site-header__nav-link" href={base + '/tools/'}>{dict.nav.tools}</a>
+    <a class="site-header__nav-link" href={base + '/blog/'}>{dict.nav.blog}</a>
+  </nav>
+  <LanguageSwitcher
+    lang={lang}
+    path={path}
+    label={dict.languageNames[lang]}
+    alternateLabel={dict.languageNames[alternateLocale]}
+  />
+</header>
+<style>
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 1rem 0;
+  }
+
+  .site-header__logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .site-header__nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+  }
+
+  .site-header__nav-link {
+    text-decoration: none;
+    color: inherit;
+    font-weight: 500;
+  }
+
+  .site-header__nav-link:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 640px) {
+    .site-header {
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .site-header__nav {
+      order: 3;
+      width: 100%;
+      justify-content: flex-start;
+    }
+  }
+</style>

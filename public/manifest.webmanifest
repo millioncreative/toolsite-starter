@@ -1,0 +1,10 @@
+{
+  "name": "工具派 / Toolsmith Hub",
+  "short_name": "Toolsmith",
+  "lang": "zh-CN",
+  "start_url": "/zh/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "icons": []
+}
