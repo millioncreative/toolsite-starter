@@ -1,7 +1,7 @@
 ---
 title: Product launch checklist
 description: Five steps to prepare your next release and keep cross-functional teams aligned.
-slug: getting-started
+slug: getting-started-en
 lang: en
 published: 2024-03-12
 ---

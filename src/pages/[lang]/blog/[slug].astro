@@ -6,15 +6,12 @@ import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
-  return posts.map((post) => {
-    const slug = post.slug.split('/').at(-1) || post.slug;
-    return {
-      params: {
-        lang: post.data.lang,
-        slug
-      }
-    };
-  });
+  return posts.map((post) => ({
+    params: {
+      lang: post.data.lang,
+      slug: post.slug
+    }
+  }));
 }
 
 const { lang, slug } = Astro.params;
@@ -25,7 +22,7 @@ if (!isLocale(lang)) {
 
 const locale = lang as Locale;
 const posts = await getCollection('blog', ({ id }) => id.startsWith(`${locale}/`));
-const entry = posts.find((post) => post.slug.split('/').at(-1) === slug);
+const entry = posts.find((post) => post.slug === slug);
 
 if (!entry) {
   return Astro.redirect(`/${locale}/blog/`);

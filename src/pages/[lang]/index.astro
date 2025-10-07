@@ -53,7 +53,7 @@ const posts = (
           <h3>{post.data.title}</h3>
           <p>{post.data.description}</p>
           <p class="blog-card__meta">{dict.blog.publishedOn} {post.data.published.toLocaleDateString(dateLocale)}</p>
-          <a href={`/${locale}/blog/${post.data.slug}/`} class="blog-card__cta">{dict.blog.readMore}</a>
+          <a href={`/${locale}/blog/${post.slug}/`} class="blog-card__cta">{dict.blog.readMore}</a>
         </article>
       ))}
     </div>

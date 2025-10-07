@@ -1,7 +1,7 @@
 ---
 title: 产品启动清单
 description: 五步走完产品启动准备，让跨部门协作更顺畅。
-slug: getting-started
+slug: getting-started-zh
 lang: zh
 published: 2024-03-12
 ---

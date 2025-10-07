@@ -1,7 +1,7 @@
 ---
 title: Collaboration tips for design and engineering
 description: Use regular reviews and shared checklists to keep multi-disciplinary teams efficient.
-slug: workflow-tips
+slug: workflow-tips-en
 lang: en
 published: 2024-04-02
 ---
