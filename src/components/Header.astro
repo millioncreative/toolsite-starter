@@ -16,7 +16,7 @@ const alternateLocale = getAlternateLocale(lang);
 ---
 <header class="site-header">
   <a href={base + '/'} class="site-header__logo">{dict.meta.siteName}</a>
-  <nav class="site-header__nav">
+  <nav aria-label="Primary" class="site-header__nav">
     <a class="site-header__nav-link" href={base + '/'}>{dict.nav.home}</a>
     <a class="site-header__nav-link" href={base + '/tools/'}>{dict.nav.tools}</a>
     <a class="site-header__nav-link" href={base + '/blog/'}>{dict.nav.blog}</a>
