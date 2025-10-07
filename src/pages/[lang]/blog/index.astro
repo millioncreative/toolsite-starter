@@ -13,7 +13,9 @@ if (!isLocale(lang)) {
 const locale = lang as Locale;
 const dict = await getDictionary(locale);
 const dateLocale = locale === 'zh' ? 'zh-CN' : 'en-US';
-const posts = (await getCollection('blog', (entry) => entry.data.lang === locale))
+const posts = (
+  await getCollection('blog', (entry) => entry.id.startsWith(`${locale}/`))
+)
   .sort((a, b) => b.data.published.getTime() - a.data.published.getTime());
 ---
 <BaseLayout lang={locale} dict={dict} title={dict.nav.blog}>

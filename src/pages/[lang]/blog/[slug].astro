@@ -1,20 +1,38 @@
 ---
 import BaseLayout from '../../../../layouts/BaseLayout.astro';
-import { getDictionary } from '../../../../i18n';
+import { getDictionary, isLocale } from '../../../../i18n';
 import type { Locale } from '../../../../i18n/config';
-import { getCollection, type CollectionEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
-  return posts.map((post) => ({
-    params: { lang: post.data.lang, slug: post.data.slug },
-    props: { post }
-  }));
+  return posts.map((post) => {
+    const slug = post.slug.split('/').at(-1) || post.slug;
+    return {
+      params: {
+        lang: post.data.lang,
+        slug
+      }
+    };
+  });
 }
 
-const { lang } = Astro.params;
-const { post } = Astro.props as { post: CollectionEntry<'blog'> };
+const { lang, slug } = Astro.params;
+
+if (!isLocale(lang)) {
+  return Astro.redirect('/zh/blog/');
+}
+
 const locale = lang as Locale;
+const posts = await getCollection('blog', ({ id }) => id.startsWith(`${locale}/`));
+const entry = posts.find((post) => post.slug.split('/').at(-1) === slug);
+
+if (!entry) {
+  return Astro.redirect(`/${locale}/blog/`);
+}
+
+const post = entry;
+
 const dict = await getDictionary(locale);
 const dateLocale = locale === 'zh' ? 'zh-CN' : 'en-US';
 const published = post.data.published.toLocaleDateString(dateLocale);
