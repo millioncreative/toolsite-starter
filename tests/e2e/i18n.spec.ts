@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 const locales = ['zh', 'en'] as const;
 const labels = {
-  zh: { blog: '博客', tools: '工具' },
+  zh: { blog: '博客', tools: '工具目录' },
   en: { blog: 'Blog', tools: 'Tools' }
 } as const;
 
