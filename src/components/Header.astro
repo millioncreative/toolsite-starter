@@ -1,8 +1,7 @@
 ---
-import LanguageSwitcher from './LanguageSwitcher.astro';
 import type { Dictionary } from '../i18n';
 import type { Locale } from '../i18n/config';
-import { getAlternateLocale } from '../i18n';
+import { getLocaleFromUrl, getSwitchLocaleUrl } from '@i18n/utils';
 
 interface Props {
   lang: Locale;
@@ -10,9 +9,12 @@ interface Props {
   path: string;
 }
 
-const { lang, dict, path } = Astro.props;
+const { lang, dict } = Astro.props;
 const base = `/${lang}`;
-const alternateLocale = getAlternateLocale(lang);
+const locale = getLocaleFromUrl(Astro.url);
+const other = locale === 'en' ? 'zh' : 'en';
+const switchHref = getSwitchLocaleUrl(Astro.url, other);
+const switchLabel = other === 'en' ? 'English' : '简体中文';
 ---
 <header class="site-header">
   <a href={base + '/'} class="site-header__logo">{dict.meta.siteName}</a>
@@ -21,12 +23,7 @@ const alternateLocale = getAlternateLocale(lang);
     <a class="site-header__nav-link" href={base + '/tools/'}>{dict.nav.tools}</a>
     <a class="site-header__nav-link" href={base + '/blog/'}>{dict.nav.blog}</a>
   </nav>
-  <LanguageSwitcher
-    lang={lang}
-    path={path}
-    label={dict.languageNames[lang]}
-    alternateLabel={dict.languageNames[alternateLocale]}
-  />
+  <a class="lang-toggle" href={switchHref} lang={other} rel="nofollow">{switchLabel}</a>
 </header>
 <style>
   .site-header {
