@@ -15,12 +15,14 @@ const locale = getLocaleFromUrl(Astro.url);
 const other = locale === 'en' ? 'zh' : 'en';
 const switchHref = getSwitchLocaleUrl(Astro.url, other);
 const switchLabel = other === 'en' ? 'English' : '简体中文';
+const toolsLabel = lang === 'zh' ? '工具' : 'Tools';
+const blogLabel = lang === 'zh' ? '博客' : 'Blog';
 ---
 <header class="site-header">
   <a href={base + '/'} class="site-header__logo">{dict.meta.siteName}</a>
   <nav aria-label="Primary" class="site-header__nav">
-    <a class="site-header__nav-link" href={base + '/tools/'}>{dict.nav.tools}</a>
-    <a class="site-header__nav-link" href={base + '/blog/'}>{dict.nav.blog}</a>
+    <a class="site-header__nav-link" href={base + '/tools/'}>{toolsLabel}</a>
+    <a class="site-header__nav-link" href={base + '/blog/'}>{blogLabel}</a>
     <a class="site-header__nav-link lang-toggle" href={switchHref} lang={other} rel="nofollow">{switchLabel}</a>
   </nav>
 </header>
