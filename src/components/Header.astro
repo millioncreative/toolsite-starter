@@ -9,14 +9,14 @@ interface Props {
   path: string;
 }
 
-const { lang, dict } = Astro.props;
-const base = `/${lang}`;
+const { dict } = Astro.props;
 const locale = getLocaleFromUrl(Astro.url);
+const base = `/${locale}`;
 const other = locale === 'en' ? 'zh' : 'en';
 const switchHref = getSwitchLocaleUrl(Astro.url, other);
 const switchLabel = other === 'en' ? 'English' : '简体中文';
-const toolsLabel = lang === 'zh' ? '工具' : 'Tools';
-const blogLabel = lang === 'zh' ? '博客' : 'Blog';
+const toolsLabel = locale === 'zh' ? '工具' : 'Tools';
+const blogLabel = locale === 'zh' ? '博客' : 'Blog';
 ---
 <header class="site-header">
   <a href={base + '/'} class="site-header__logo">{dict.meta.siteName}</a>
