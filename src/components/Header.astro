@@ -22,7 +22,7 @@ const switchLabel = other === 'en' ? 'English' : '简体中文';
     <a class="site-header__nav-link" href={base + '/'}>{dict.nav.home}</a>
     <a class="site-header__nav-link" href={base + '/tools/'}>{dict.nav.tools}</a>
     <a class="site-header__nav-link" href={base + '/blog/'}>{dict.nav.blog}</a>
-    <a class="lang-toggle" href={switchHref} lang={other} rel="nofollow">{switchLabel}</a>
+    <a class="site-header__nav-link lang-toggle" href={switchHref} lang={other} rel="nofollow">{switchLabel}</a>
   </nav>
 </header>
 <style>
