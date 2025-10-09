@@ -9,15 +9,19 @@ interface Props {
   path: string;
 }
 
-const { dict } = Astro.props;
+// Base path for links must come from the prop (stable across environments)
+const { lang, dict } = Astro.props;
+const base = `/${lang}`;
+
+// Labels come from the current URL locale so e2e can assert text reliably
 const locale = getLocaleFromUrl(Astro.url);
-const base = `/${locale}`;
 const other = locale === 'en' ? 'zh' : 'en';
 const switchHref = getSwitchLocaleUrl(Astro.url, other);
 const switchLabel = other === 'en' ? 'English' : '简体中文';
 const toolsLabel = locale === 'zh' ? '工具' : 'Tools';
-const blogLabel = locale === 'zh' ? '博客' : 'Blog';
+const blogLabel  = locale === 'zh' ? '博客' : 'Blog';
 ---
+
 <header class="site-header">
   <a href={base + '/'} class="site-header__logo">{dict.meta.siteName}</a>
   <nav aria-label="Primary" class="site-header__nav">
@@ -26,6 +30,7 @@ const blogLabel = locale === 'zh' ? '博客' : 'Blog';
     <a class="site-header__nav-link lang-toggle" href={switchHref} lang={other} rel="nofollow">{switchLabel}</a>
   </nav>
 </header>
+
 <style>
   .site-header {
     display: flex;
