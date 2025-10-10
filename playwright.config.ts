@@ -7,7 +7,7 @@ export default defineConfig({
     timeout: 5_000
   },
   use: {
-    baseURL: 'http://127.0.0.1:4321',
+    baseURL: 'http://localhost:4321',
     trace: 'on-first-retry',
     viewport: { width: 1280, height: 720 }
   },
@@ -18,7 +18,7 @@ export default defineConfig({
     }
   ],
   webServer: {
-    command: 'npm run dev -- --host 0.0.0.0 --port 4321',
+    command: 'npx astro build && npx astro preview --port=4321 --host',
     port: 4321,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000
