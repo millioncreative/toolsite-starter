@@ -1,9 +1,12 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 
+const SITE = process.env.PUBLIC_SITE || 'http://localhost:4321';
+const BASE = process.env.PUBLIC_BASE || '/';
+
 export default defineConfig({
-  site: 'https://millioncreative.github.io',
-  base: '/toolsite-starter/',
+  site: SITE,
+  base: BASE,
   trailingSlash: 'never',
   integrations: [
     sitemap({
