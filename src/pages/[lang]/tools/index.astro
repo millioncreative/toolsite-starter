@@ -1,5 +1,10 @@
 ---
-export { getI18nStaticPaths as getStaticPaths } from '../../../lib/i18n';
+export async function getStaticPaths() {
+  return [
+    { params: { lang: 'en' } },
+    { params: { lang: 'zh' } },
+  ];
+}
 export const prerender = true;
 
 import BaseLayout from '../../../layouts/BaseLayout.astro';
