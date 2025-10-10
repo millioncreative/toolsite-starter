@@ -1,7 +1,7 @@
 ---
-import { locales } from '../../i18n/config';
-
-export const getStaticPaths = () => locales.map((lang) => ({ params: { lang } }));
+export function getStaticPaths() {
+  return ['en', 'zh'].map((lang) => ({ params: { lang } }));
+}
 export const prerender = true;
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
