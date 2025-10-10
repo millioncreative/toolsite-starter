@@ -1,0 +1,68 @@
+---
+import Header from '@components/Header.astro';
+import Footer from '@components/Footer.astro';
+import PrivacyNotice from '@components/PrivacyNotice.astro';
+import AdSensePlaceholder from '@components/AdSensePlaceholder.astro';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  canonical?: string;
+  noIndex?: boolean;
+}
+
+const siteName = 'Toolsite Starter';
+const locale = 'zh-CN';
+const {
+  title = siteName,
+  description = '构建一个快速启动的工具站点模版，所有工具皆在浏览器本地运行。',
+  ogImage = '/icons/icon.svg',
+  canonical,
+  noIndex = false
+} = Astro.props as Props;
+
+const pageTitle = title === siteName ? title : `${title} · ${siteName}`;
+const canonicalUrl = canonical ?? (Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined);
+const resolvedOgImage = Astro.site ? new URL(ogImage, Astro.site).href : ogImage;
+---
+<!DOCTYPE html>
+<html lang={locale} class="bg-slate-950">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content={resolvedOgImage} />
+    <meta property="og:locale" content="zh_CN" />
+    {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#0f172a" />
+    {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+    {noIndex && <meta name="robots" content="noindex, nofollow" />}
+  </head>
+  <body class="flex min-h-screen flex-col text-slate-100">
+    <PrivacyNotice />
+    <Header />
+    <main class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-12 py-12">
+      <slot />
+      <AdSensePlaceholder />
+    </main>
+    <Footer />
+    <script is:inline>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker
+            .register('/sw.js')
+            .catch((error) => console.error('SW registration failed', error));
+        });
+      }
+    </script>
+  </body>
+</html>

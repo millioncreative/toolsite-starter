@@ -1,0 +1,9 @@
+---
+import type { ToolCardContent } from './toolCardTemplate';
+import { toolCardTemplate } from './toolCardTemplate';
+
+export interface Props extends ToolCardContent {}
+
+const props = Astro.props as Props;
+---
+<Fragment set:html={toolCardTemplate(props)} />

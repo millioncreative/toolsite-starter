@@ -1,0 +1,24 @@
+export interface ToolCardContent {
+  title: string;
+  description: string;
+  href: string;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+export function toolCardTemplate({ title, description, href }: ToolCardContent): string {
+  return `
+<a href="${escapeHtml(href)}" class="group block h-full rounded-2xl border border-white/10 bg-slate-900/60 p-6 shadow-lg shadow-slate-900/30 transition hover:-translate-y-1 hover:border-accent hover:shadow-accent/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+  <h3 class="text-lg font-semibold text-white group-hover:text-accent">${escapeHtml(title)}</h3>
+  <p class="mt-3 text-sm leading-relaxed text-slate-300">${escapeHtml(description)}</p>
+  <span class="mt-4 inline-flex items-center gap-2 text-xs font-medium text-accent">了解更多 →</span>
+</a>
+`.trim();
+}

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title>Toolsite Starter</title>
+  <desc>Minimal hexagon icon for Toolsite Starter.</desc>
+  <defs>
+    <linearGradient id="g" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#f97316" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#0f172a" />
+  <path fill="url(#g)" d="M64 18l36 20.78v50.44L64 110 28 89.22V38.78L64 18zm0 17.32L40 46.58v34.84L64 92.68l24-11.26V46.58L64 35.32z" />
+</svg>
