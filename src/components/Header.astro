@@ -15,15 +15,17 @@ const base = `/${locale}`;
 const other = locale === 'en' ? 'zh' : 'en';
 const switchHref = getSwitchLocaleUrl(Astro.url, other);
 const switchLabel = other === 'en' ? 'English' : '简体中文';
-const toolsLabel = locale === 'zh' ? '工具' : 'Tools';
-const blogLabel = locale === 'zh' ? '博客' : 'Blog';
+const labels =
+  locale === 'zh'
+    ? { tools: '工具', blog: '博客' }
+    : { tools: 'Tools', blog: 'Blog' };
 const siteName = dict?.meta?.siteName ?? 'Toolsmith Hub';
 ---
 <header class="site-header">
   <a href={`${base}/`} class="site-header__logo">{siteName}</a>
   <nav aria-label="Primary" class="site-header__nav">
-    <a class="site-header__nav-link" href={`${base}/tools/`}>{toolsLabel}</a>
-    <a class="site-header__nav-link" href={`${base}/blog/`}>{blogLabel}</a>
+    <a class="site-header__nav-link" href={`${base}/tools/`}>{labels.tools}</a>
+    <a class="site-header__nav-link" href={`${base}/blog/`}>{labels.blog}</a>
     <a class="site-header__nav-link lang-toggle" href={switchHref} lang={other} rel="nofollow">{switchLabel}</a>
   </nav>
 </header>
