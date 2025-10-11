@@ -1,10 +1,11 @@
 ---
+import Header from '@components/Header.astro';
+import Footer from '@components/Footer.astro';
+import PrivacyBanner from '@components/PrivacyBanner.astro';
+import '../styles/global.css';
 
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
-import PrivacyBanner from '../components/PrivacyBanner.astro';
-import type { Dictionary } from '../i18n';
-import type { Locale } from '../i18n/config';
+import type { Dictionary } from '@i18n';
+import type { Locale } from '@i18n/config';
 import { getLocaleFromUrl, getSwitchLocaleUrl } from '@i18n/utils';
 
 interface Props {
@@ -12,130 +13,78 @@ interface Props {
   dict: Dictionary;
   title?: string;
   description?: string;
-}
-
-const { lang, dict, title, description } = Astro.props;
-const pageTitle = title ? `${title} · ${dict.meta.siteName}` : dict.meta.defaultTitle;
-const pageDescription = description ?? dict.meta.description;
-const url = Astro.url;
-const site = Astro.site ?? new URL(url.origin);
-const relativePath = url.pathname.replace(/^\/(zh|en)/, '') || '/';
-const canonical = new URL(`/${lang}${relativePath}`, site).toString();
-const ogLocale = lang === 'zh' ? 'zh_CN' : 'en_US';
-const locale = getLocaleFromUrl(url);
-const htmlLang = locale === 'zh' ? 'zh-CN' : 'en';
-const hrefEn = new URL(getSwitchLocaleUrl(url, 'en'), site).toString();
-const hrefZh = new URL(getSwitchLocaleUrl(url, 'zh'), site).toString();
----
-<!DOCTYPE html>
-<html lang={htmlLang}>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{pageTitle}</title>
-    <meta name="description" content={pageDescription} />
-    <meta property="og:title" content={pageTitle} />
-    <meta property="og:description" content={pageDescription} />
-    <meta property="og:locale" content={ogLocale} />
-    <link rel="canonical" href={canonical} />
-    <link rel="alternate" hreflang="en" href={hrefEn} />
-    <link rel="alternate" hreflang="zh-CN" href={hrefZh} />
-    <link rel="alternate" hreflang="x-default" href={hrefEn} />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <style>
-      :root {
-        color-scheme: light;
-        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        background: #f8fafc;
-        color: #0f172a;
-      }
-
-      body {
-        margin: 0;
-      }
-
-      a {
-        color: inherit;
-      }
-
-      .page-container {
-        margin: 0 auto;
-        max-width: 960px;
-        padding: 0 1.5rem 4rem;
-      }
-
-      main {
-        display: grid;
-        gap: 3rem;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="page-container">
-      <Header lang={lang} dict={dict} path={url.pathname} />
-      <main>
-        <slot />
-      </main>
-      <Footer dict={dict} />
-    </div>
-    <PrivacyBanner dict={dict} />
-
-import Header from '@components/Header.astro';
-import Footer from '@components/Footer.astro';
-import PrivacyNotice from '@components/PrivacyNotice.astro';
-import AdSensePlaceholder from '@components/AdSensePlaceholder.astro';
-import '../styles/global.css';
-
-interface Props {
-  title?: string;
-  description?: string;
   ogImage?: string;
   canonical?: string;
   noIndex?: boolean;
 }
 
-const siteName = 'Toolsite Starter';
-const locale = 'zh-CN';
 const {
-  title = siteName,
-  description = '构建一个快速启动的工具站点模版，所有工具皆在浏览器本地运行。',
+  lang,
+  dict,
+  title,
+  description,
   ogImage = '/icons/icon.svg',
   canonical,
   noIndex = false
 } = Astro.props as Props;
 
-const pageTitle = title === siteName ? title : `${title} · ${siteName}`;
-const canonicalUrl = canonical ?? (Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined);
+const url = Astro.url;
+const site = Astro.site ?? new URL(url.origin);
+const relativePath = url.pathname.replace(/^\/(zh|en)/, '') || '/';
+
+const pageTitle = title ? `${title} · ${dict.meta.siteName}` : dict.meta.defaultTitle;
+const pageDescription = description ?? dict.meta.description;
+
+const canonicalUrl = canonical ?? new URL(`/${lang}${relativePath}`, site).toString();
+const hrefEn = new URL(getSwitchLocaleUrl(url, 'en'), site).toString();
+const hrefZh = new URL(getSwitchLocaleUrl(url, 'zh'), site).toString();
+
+const ogLocale = lang === 'zh' ? 'zh_CN' : 'en_US';
+const htmlLang = lang === 'zh' ? 'zh-CN' : 'en';
 const resolvedOgImage = Astro.site ? new URL(ogImage, Astro.site).href : ogImage;
 ---
+
 <!DOCTYPE html>
-<html lang={locale} class="bg-slate-950">
+<html lang={htmlLang} class="bg-slate-950">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
+
     <title>{pageTitle}</title>
-    <meta name="description" content={description} />
+    <meta name="description" content={pageDescription} />
+
     <meta property="og:title" content={pageTitle} />
-    <meta property="og:description" content={description} />
+    <meta property="og:description" content={pageDescription} />
     <meta property="og:type" content="website" />
     <meta property="og:image" content={resolvedOgImage} />
-    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:locale" content={ogLocale} />
     {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
+
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#0f172a" />
+
     {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+    <link rel="alternate" hreflang="en" href={hrefEn} />
+    <link rel="alternate" hreflang="zh-CN" href={hrefZh} />
+    <link rel="alternate" hreflang="x-default" href={hrefEn} />
     {noIndex && <meta name="robots" content="noindex, nofollow" />}
+
+    {/* 供页面向 <head> 注入额外内容 */}
+    <slot name="head" />
   </head>
+
   <body class="flex min-h-screen flex-col text-slate-100">
-    <PrivacyNotice />
-    <Header />
+    <PrivacyBanner dict={dict} />
+    <Header lang={lang} dict={dict} path={url.pathname} />
+
     <main class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-12 py-12">
       <slot />
-      <AdSensePlaceholder />
     </main>
-    <Footer />
+
+    <Footer dict={dict} />
+
     <script is:inline>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
