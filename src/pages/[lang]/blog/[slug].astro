@@ -2,58 +2,77 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { getDictionary, isLocale } from '../../../i18n';
 import type { Locale } from '../../../i18n/config';
-import { getCollection } from 'astro:content';
+import { getCollection, getEntryBySlug } from 'astro:content';
 
 export const prerender = true;
 
 /**
- * Build-time: enumerate all localized blog post paths.
- * We read the "blog" collection and for each entry:
- *   - lang is the first path segment of the slug (e.g. "en/foo" -> "en")
- *   - slug is the last path segment (e.g. "en/foo/bar" -> "bar")
+ * 构建期：为本地化博客详情页生成静态路径。
+ * 规则：
+ *   - lang 为集合 slug 的第 1 段（例如 "en/foo/bar" -> "en"）
+ *   - slug 为集合 slug 的最后 1 段（例如 "en/foo/bar" -> "bar"）
+ *   - 只接受 lang ∈ { "en", "zh" }，并且 slug 非空
+ * 这样可以杜绝空 slug 或把整条路径当 slug 的情况，避免生成到 dist/ 根目录导致 EISDIR。
  */
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
-  return posts.map((post) => {
-    const parts = post.slug.split('/');
-    const lang = parts[0];
-    const tail = parts[parts.length - 1] || post.slug;
-    return { params: { lang, slug: tail } };
+
+  const allowed = new Set(['en', 'zh']);
+
+  return posts
+    .map((post) => {
+      // post.slug 形如 "en/some/deep/path/my-post"
+      const parts = post.slug.split('/').filter(Boolean);
+      if (parts.length < 2) return null;
+
+      const lang = parts[0];
+      const tail = parts[parts.length - 1];
+      if (!allowed.has(lang) || !tail) return null;
+
+      return { params: { lang, slug: tail } };
+    })
+    .filter(Boolean) as Array<{ params: { lang: string; slug: string } }>;
+}
+
+/**
+ * 运行期：根据 lang + slug 加载对应文章，兜底找不到则回到该语言博客列表。
+ */
+const { lang: rawLang = 'en', slug: rawSlug = '' } = Astro.params;
+const lang = String(rawLang) as Locale;
+const slug = String(rawSlug);
+
+// 校验语言
+if (!isLocale(lang)) {
+  // 不识别的语言，回到默认语言列表，避免预览 500
+  throw Astro.redirect('/en/blog/');
+}
+
+// 1) 先按精确 "lang/slug" 命中
+let entry = await getEntryBySlug('blog', `${lang}/${slug}`);
+
+// 2) 兜底：在该语言前缀下，按“最后一段 == slug”匹配（兼容子目录）
+if (!entry) {
+  const inLocale = await getCollection('blog', ({ slug }) => slug.startsWith(`${lang}/`));
+  entry = inLocale.find((p) => {
+    const parts = p.slug.split('/').filter(Boolean);
+    const tail = parts[parts.length - 1] || p.slug;
+    return tail === slug;
   });
 }
 
-const { lang: langParam, slug: slugParam } = Astro.params;
-const lang = (langParam ?? 'en') as string;
-
-if (!isLocale(lang)) {
-  // Unknown locale → send user to default locale's blog list to avoid 500s in preview.
-  return Astro.redirect('/en/blog/');
-}
-
-const locale = lang as Locale;
-const dict = await getDictionary(locale);
-
-// Find the exact entry for this locale and slug.
-// We accept that the collection slug may be nested (e.g., "en/some/path/my-post").
-// So we filter by locale prefix and then match by the last segment.
-const posts = await getCollection('blog', ({ slug }) => slug.startsWith(`${locale}/`));
-const entry = posts.find((p) => {
-  const parts = p.slug.split('/');
-  const tail = parts[parts.length - 1] || p.slug;
-  return tail === slugParam;
-});
-
+// 3) 仍然找不到，回到该语言的博客列表
 if (!entry) {
-  // Fallback: go to the locale's blog index. This avoids preview server crashes in CI.
-  return Astro.redirect(`/${locale}/blog/`);
+  throw Astro.redirect(`/${lang}/blog/`);
 }
 
+// 4) 渲染正文与字典
 const { Content, data } = await entry.render();
+const dict = await getDictionary(lang);
 const title = data?.title ?? '';
 const description = data?.description ?? '';
 ---
 
-<BaseLayout lang={locale} dict={dict} title={title} description={description}>
+<BaseLayout lang={lang} dict={dict} title={title} description={description}>
   <article class="prose mx-auto">
     <header class="mb-8">
       {title && <h1>{title}</h1>}
