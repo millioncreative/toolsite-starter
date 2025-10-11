@@ -1,47 +1,74 @@
 ---
+// Localized blog detail page: /:lang/blog/:slug
+
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { getDictionary, isLocale } from '../../../i18n';
 import type { Locale } from '../../../i18n/config';
-import { getCollection, getEntryBySlug } from 'astro:content';
+import { getCollection } from 'astro:content';
 
 export const prerender = true;
 
-// Build-time: generate safe static paths for localized blog details
+/**
+ * Build-time:
+ * Generate safe static paths only for "en" and "zh", and only when the last
+ * slug segment is non-empty. Also de-duplicate "lang/slug" keys.
+ */
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
   const allowed = new Set(['en', 'zh']);
-  return posts
-    .map((p) => p.slug.split('/').filter(Boolean))
-    .filter((parts) => parts.length >= 2 && allowed.has(parts[0]))
-    .map((parts) => ({
-      params: { lang: parts[0], slug: parts[parts.length - 1] }
-    }));
+  const seen = new Set<string>();
+  const paths: Array<{ params: { lang: string; slug: string } }> = [];
+
+  for (const p of posts) {
+    // e.g. "en/some/deep/path/my-post"
+    const parts = p.slug.split('/').filter(Boolean);
+    if (parts.length < 2) continue;
+
+    const lang = parts[0];
+    const tail = parts[parts.length - 1];
+    if (!allowed.has(lang) || !tail) continue;
+
+    const key = `${lang}/${tail}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    paths.push({ params: { lang, slug: tail } });
+  }
+
+  return paths;
 }
 
-// Runtime: resolve entry by lang+slug with a robust fallback
+/**
+ * Runtime:
+ * Resolve the entry under the locale prefix. If missing, redirect to the
+ * locale's blog index to keep preview/e2e stable.
+ */
 const { lang: rawLang = 'en', slug: rawSlug = '' } = Astro.params;
-const lang = String(rawLang) as Locale;
-const slug = String(rawSlug);
 
-if (!isLocale(lang)) {
+const langStr = typeof rawLang === 'string' ? rawLang : String(rawLang);
+const slugStr = typeof rawSlug === 'string' ? rawSlug : String(rawSlug);
+
+if (!isLocale(langStr as Locale)) {
   return Astro.redirect('/en/blog/');
 }
-
-// 1) exact match "lang/slug"
-let entry = await getEntryBySlug('blog', `${lang}/${slug}`);
-
-// 2) fallback within locale prefix: match last segment
-if (!entry) {
-  const inLocale = await getCollection('blog', ({ slug }) => slug.startsWith(`${lang}/`));
-  entry = inLocale.find((p) => p.slug.split('/').pop() === slug) ?? null;
+if (!slugStr) {
+  return Astro.redirect(`/${langStr}/blog/`);
 }
 
-// 3) still missing → go back to the locale's blog index
+const lang = langStr as Locale;
+const dict = await getDictionary(lang);
+
+// Read only posts within the current locale, then match by the last path segment.
+const inLocale = await getCollection('blog', ({ slug }) => slug.startsWith(`${lang}/`));
+const entry = inLocale.find((p) => {
+  const parts = p.slug.split('/').filter(Boolean);
+  return parts[parts.length - 1] === slugStr;
+});
+
 if (!entry) {
   return Astro.redirect(`/${lang}/blog/`);
 }
 
-const dict = await getDictionary(lang);
 const { Content, data } = await entry.render();
 const title = data?.title ?? '';
 const description = data?.description ?? '';
@@ -49,6 +76,10 @@ const description = data?.description ?? '';
 
 <BaseLayout lang={lang} dict={dict} title={title} description={description}>
   <article class="prose mx-auto">
+    <header class="mb-8">
+      {title && <h1>{title}</h1>}
+      {description && <p>{description}</p>}
+    </header>
     <Content />
   </article>
 </BaseLayout>
