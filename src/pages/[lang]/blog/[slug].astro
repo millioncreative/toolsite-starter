@@ -2,73 +2,41 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { getDictionary, isLocale } from '../../../i18n';
 import type { Locale } from '../../../i18n/config';
-import { getCollection } from 'astro:content';
-import { getI18nStaticPaths } from '../../../lib/i18n';
-import { formatDate } from '@i18n/utils';
+import { getEntryBySlug, getCollection } from 'astro:content';
 
 export const prerender = true;
 
-export async function getStaticPaths() {
-  const posts = await getCollection('blog');
-
-  return getI18nStaticPaths().flatMap(({ params: { lang } }) => {
-    const entries = posts.filter((post) => post.id.startsWith(`${lang}/`));
-
-    return entries.map((post) => ({
-      params: { lang, slug: post.slug.split('/').pop() ?? post.slug }
-    }));
-  });
-}
-
-const { lang, slug } = Astro.params;
-
+const { params } = Astro;
+const lang = (params.lang ?? 'en') as Locale;
 if (!isLocale(lang)) {
-  return Astro.redirect('/zh/blog/');
+  throw new Error(`Unknown locale: ${params.lang}`);
 }
 
-const locale = lang as Locale;
-const posts = await getCollection('blog', ({ id }) => id.startsWith(`${locale}/`));
-const entry = posts.find((post) => (post.slug.split('/').pop() ?? post.slug) === slug);
+const dict = await getDictionary(lang);
 
-if (!entry) {
-  return Astro.redirect(`/${locale}/blog/`);
+// 期望的 slug 形如 "my-post"
+const slug = params.slug as string;
+
+// 先按 slug 精确查找
+let post = await getEntryBySlug('blog', slug);
+
+// 若内容在子目录中，CI 传入的 slug 可能只是不含路径的尾段；做一次兜底匹配
+if (!post) {
+  const all = await getCollection('blog');
+  post = all.find((p) => p.slug.split('/').pop() === slug);
 }
 
-const post = entry;
+// 找不到就回到该语言的博客列表，避免预览报错
+if (!post) {
+  return Astro.redirect(`/${lang}/blog/`);
+}
 
-const dict = await getDictionary(locale);
-const published = post.data.pubDate
-  ? formatDate(post.data.pubDate, locale)
-  : '';
+// 渲染内容
+const { Content, data } = await post.render();
 ---
-<BaseLayout lang={locale} dict={dict} title={post.data.title} description={post.data.description}>
-  <article class="post">
-    <header class="post__header">
-      <p class="post__meta">{dict.blog.publishedOn} {published}</p>
-      <h1>{post.data.title}</h1>
-      <p class="post__description">{post.data.description}</p>
-    </header>
-    <section class="post__content">
-      <post.Content />
-    </section>
+
+<BaseLayout {dict} lang={lang} title={data?.title}>
+  <article class="prose">
+    <Content />
   </article>
 </BaseLayout>
-<style>
-  .post {
-    display: grid;
-    gap: 2rem;
-  }
-
-  .post__meta {
-    color: color-mix(in srgb, currentColor 65%, transparent);
-    font-size: 0.875rem;
-  }
-
-  .post__content :global(p) {
-    line-height: 1.8;
-  }
-
-  .post__content :global(h2) {
-    margin-top: 2rem;
-  }
-</style>
