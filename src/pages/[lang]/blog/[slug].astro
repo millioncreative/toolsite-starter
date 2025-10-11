@@ -38,13 +38,19 @@ export async function getStaticPaths() {
  * 运行期：根据 lang + slug 加载对应文章，兜底找不到则回到该语言博客列表。
  */
 const { lang: rawLang = 'en', slug: rawSlug = '' } = Astro.params;
-const lang = String(rawLang) as Locale;
-const slug = String(rawSlug);
+const langParam = typeof rawLang === 'string' ? rawLang : String(rawLang);
+const slug = typeof rawSlug === 'string' ? rawSlug : String(rawSlug);
 
 // 校验语言
-if (!isLocale(lang)) {
+if (!isLocale(langParam)) {
   // 不识别的语言，回到默认语言列表，避免预览 500
-  throw Astro.redirect('/en/blog/');
+  return Astro.redirect('/en/blog/');
+}
+
+const lang = langParam as Locale;
+
+if (!slug) {
+  return Astro.redirect(`/${lang}/blog/`);
 }
 
 // 1) 先按精确 "lang/slug" 命中
@@ -62,7 +68,7 @@ if (!entry) {
 
 // 3) 仍然找不到，回到该语言的博客列表
 if (!entry) {
-  throw Astro.redirect(`/${lang}/blog/`);
+  return Astro.redirect(`/${lang}/blog/`);
 }
 
 // 4) 渲染正文与字典
