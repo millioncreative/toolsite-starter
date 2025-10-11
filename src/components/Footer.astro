@@ -1,3 +1,4 @@
+
 ---
 import type { Dictionary } from '../i18n';
 
@@ -19,3 +20,11 @@ const { dict } = Astro.props;
     color: color-mix(in srgb, currentColor 70%, transparent);
   }
 </style>
+=======
+<footer class="border-t border-white/10 bg-slate-900/70 text-slate-300">
+  <div class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-sm md:flex-row md:items-center md:justify-between">
+    <p>© {new Date().getFullYear()} Toolsite Starter. MIT Licensed.</p>
+    <p class="text-xs text-slate-400">构建您的浏览器原生工具集合。</p>
+  </div>
+</footer>
+

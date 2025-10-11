@@ -16,8 +16,8 @@ export default defineConfig({
     sitemap({
       i18n: {
         defaultLocale: 'zh',
-        locales: { zh: 'zh', en: 'en' },
-      },
-    }),
-  ],
+        locales: { zh: 'zh', en: 'en' }
+      }
+    })
+  ]
 });
