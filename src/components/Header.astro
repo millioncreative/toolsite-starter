@@ -1,98 +1,98 @@
 ---
+import Header from '@components/Header.astro';
+import Footer from '@components/Footer.astro';
+import PrivacyBanner from '@components/PrivacyBanner.astro';
+import '../styles/global.css';
 
-import type { Dictionary } from '../i18n';
-import type { Locale } from '../i18n/config';
+import type { Dictionary } from '@i18n';
+import type { Locale } from '@i18n/config';
 import { getLocaleFromUrl, getSwitchLocaleUrl } from '@i18n/utils';
 
 interface Props {
   lang: Locale;
   dict: Dictionary;
-  path: string;
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  canonical?: string;
+  noIndex?: boolean;
 }
 
-const { dict } = Astro.props;
-const locale = getLocaleFromUrl(Astro.url);
-const base = `/${locale}`;
-const other = locale === 'en' ? 'zh' : 'en';
-const switchHref = getSwitchLocaleUrl(Astro.url, other);
-const switchLabel = other === 'en' ? 'English' : '简体中文';
-const labels =
-  locale === 'zh'
-    ? { tools: '工具', blog: '博客' }
-    : { tools: 'Tools', blog: 'Blog' };
-const siteName = dict?.meta?.siteName ?? 'Toolsmith Hub';
+const {
+  lang,
+  dict,
+  title,
+  description,
+  ogImage = '/icons/icon.svg',
+  canonical,
+  noIndex = false
+} = Astro.props as Props;
+
+const url = Astro.url;
+const site = Astro.site ?? new URL(url.origin);
+const relativePath = url.pathname.replace(/^\/(zh|en)/, '') || '/';
+
+const pageTitle = title ? `${title} · ${dict.meta.siteName}` : dict.meta.defaultTitle;
+const pageDescription = description ?? dict.meta.description;
+
+const canonicalUrl = canonical ?? new URL(`/${lang}${relativePath}`, site).toString();
+const hrefEn = new URL(getSwitchLocaleUrl(url, 'en'), site).toString();
+const hrefZh = new URL(getSwitchLocaleUrl(url, 'zh'), site).toString();
+
+const ogLocale = lang === 'zh' ? 'zh_CN' : 'en_US';
+const htmlLang = lang === 'zh' ? 'zh-CN' : 'en';
+const resolvedOgImage = Astro.site ? new URL(ogImage, Astro.site).href : ogImage;
 ---
-<header class="site-header">
-  <a href={`${base}/`} class="site-header__logo">{siteName}</a>
-  <nav aria-label="Primary" class="site-header__nav">
-    <a class="site-header__nav-link" href={`${base}/tools/`}>{labels.tools}</a>
-    <a class="site-header__nav-link" href={`${base}/blog/`}>{labels.blog}</a>
-    <a class="site-header__nav-link lang-toggle" href={switchHref} lang={other} rel="nofollow">{switchLabel}</a>
-  </nav>
-</header>
-<style>
-  .site-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1.5rem;
-    padding: 1rem 0;
-  }
 
-  .site-header__logo {
-    font-size: 1.25rem;
-    font-weight: 700;
-    text-decoration: none;
-    color: inherit;
-  }
+<!DOCTYPE html>
+<html lang={htmlLang} class="bg-slate-950">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
 
-  .site-header__nav {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex: 1;
-  }
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
 
-  .site-header__nav-link {
-    text-decoration: none;
-    color: inherit;
-    font-weight: 500;
-  }
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content={resolvedOgImage} />
+    <meta property="og:locale" content={ogLocale} />
+    {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
 
-  .site-header__nav-link:hover {
-    text-decoration: underline;
-  }
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#0f172a" />
 
-  @media (max-width: 640px) {
-    .site-header {
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
+    {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+    <link rel="alternate" hreflang="en" href={hrefEn} />
+    <link rel="alternate" hreflang="zh-CN" href={hrefZh} />
+    <link rel="alternate" hreflang="x-default" href={hrefEn} />
+    {noIndex && <meta name="robots" content="noindex, nofollow" />}
 
-    .site-header__nav {
-      order: 3;
-      width: 100%;
-      justify-content: flex-start;
-    }
-  }
-</style>
+    {/* 供页面向 <head> 注入额外内容 */}
+    <slot name="head" />
+  </head>
 
-const navItems = [
-  { href: '/', label: '首页' },
-  { href: '/tools', label: '工具目录' },
-  { href: '/blog', label: '博客' }
-];
----
-<header class="bg-slate-900/70 backdrop-blur border-b border-white/10">
-  <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-    <a href="/" class="text-xl font-semibold tracking-wide text-white">Toolsite Starter</a>
-    <nav>
-      <ul class="flex items-center gap-6 text-sm font-medium text-slate-200">
-        {navItems.map((item) => (
-          <li><a class="transition hover:text-accent" href={item.href}>{item.label}</a></li>
-        ))}
-      </ul>
-    </nav>
-  </div>
-</header>
+  <body class="flex min-h-screen flex-col text-slate-100">
+    <PrivacyBanner dict={dict} />
+    <Header lang={lang} dict={dict} path={url.pathname} />
 
+    <main class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-12 py-12">
+      <slot />
+    </main>
+
+    <Footer dict={dict} />
+
+    <script is:inline>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker
+            .register('/sw.js')
+            .catch((error) => console.error('SW registration failed', error));
+        });
+      }
+    </script>
+  </body>
+</html>
