@@ -11,8 +11,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -24,10 +25,14 @@ jobs:
       - name: Install dependencies
         run: |
           if [ -f package-lock.json ]; then
-            npm ci
+            # 优先严格安装；若锁文件不同步则回退到 install
+            npm ci || npm install --no-audit --no-fund
           else
-            npm install
+            npm install --no-audit --no-fund
           fi
+
+      - name: Build
+        run: npm run build
 
       - name: Run unit tests
         run: npm test
@@ -39,10 +44,13 @@ jobs:
 
       - name: Run end-to-end tests
         run: npm run e2e
-        env:
-          CI: true
 
-      # Always upload Playwright artifacts for debugging
+      # 若仓库里有 lighthouserc.json 则跑 LHCI；否则跳过
+      - name: Lighthouse CI
+        if: ${{ hashFiles('lighthouserc.json') != '' }}
+        run: npm run lh
+
+      # 永远上传 Playwright 工件用于排错
       - name: Upload Playwright test-results (always)
         if: always()
         uses: actions/upload-artifact@v4
