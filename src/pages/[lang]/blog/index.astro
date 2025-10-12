@@ -1,85 +1,41 @@
 ---
-export function getStaticPaths() {
-  return ['en', 'zh'].map((lang) => ({ params: { lang } }));
-}
-export const prerender = true;
-
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
 import { getDictionary, isLocale } from '../../../i18n';
 import type { Locale } from '../../../i18n/config';
-import { getCollection } from 'astro:content';
-import { formatDate } from '@i18n/utils';
 
-const { lang } = Astro.params;
+export async function getStaticPaths() {
+  return ['en', 'zh'].map((lang) => ({ params: { lang } }));
+}
 
+const { lang = 'zh' } = Astro.params;
 if (!isLocale(lang)) {
   return Astro.redirect('/zh/blog/');
 }
-
 const locale = lang as Locale;
 const dict = await getDictionary(locale);
-const getSlugSegment = (entrySlug: string) => entrySlug.split('/').pop() ?? entrySlug;
-const getPublishedTime = (date?: Date) => (date ? date.getTime() : 0);
-const posts = (
-  await getCollection('blog', (entry) => entry.id.startsWith(`${locale}/`))
-)
+
+const getPublishedTime = (d?: Date) => (d ? d.getTime() : 0);
+
+// 只展示当前语言的文章：entry.id/slug 形如 "en/xxx"、"zh/xxx"
+const posts = (await getCollection('blog'))
+  .filter((entry) => entry.id.startsWith(`${locale}/`))
   .sort((a, b) => getPublishedTime(b.data.pubDate) - getPublishedTime(a.data.pubDate));
 ---
+
 <BaseLayout lang={locale} dict={dict} title={dict.nav.blog}>
   <section class="blog">
     <h1>{dict.sections.latestArticles}</h1>
-    <div class="blog-grid">
-      {posts.map((post) => (
-        <article class="blog-card">
-          <h2>{post.data.title}</h2>
-          <p>{post.data.description}</p>
-          <p class="blog-card__meta">
-            {dict.blog.publishedOn}{' '}
-            {post.data.pubDate ? formatDate(post.data.pubDate, locale) : ''}
-          </p>
-          <a
-            class="blog-card__cta"
-            href={`/${locale}/blog/${getSlugSegment(post.slug)}/`}
-          >
-            {dict.blog.readMore}
-          </a>
-        </article>
-      ))}
-    </div>
+    <ul>
+      {posts.map((p) => {
+        const [, slug] = p.slug.split('/'); // 从 "en/getting-started" 取出 "getting-started"
+        const href = `/${locale}/blog/${slug}`;
+        return (
+          <li>
+            <a href={href}>{p.data.title}</a>
+          </li>
+        );
+      })}
+    </ul>
   </section>
 </BaseLayout>
-<style>
-  .blog {
-    display: grid;
-    gap: 1.5rem;
-  }
-
-  .blog-grid {
-    display: grid;
-    gap: 1.5rem;
-  }
-
-  @media (min-width: 720px) {
-    .blog-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
-  .blog-card {
-    background: white;
-    border-radius: 1rem;
-    padding: 1.5rem;
-    box-shadow: 0 1rem 2rem rgba(15, 23, 42, 0.08);
-  }
-
-  .blog-card__meta {
-    color: color-mix(in srgb, currentColor 65%, transparent);
-    font-size: 0.875rem;
-  }
-
-  .blog-card__cta {
-    display: inline-block;
-    margin-top: 1rem;
-    font-weight: 600;
-  }
-</style>
