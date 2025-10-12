@@ -1,63 +1,22 @@
 ---
+export const prerender = true;
 export function getStaticPaths() {
   return ['en', 'zh'].map((lang) => ({ params: { lang } }));
 }
-export const prerender = true;
-
-import BaseLayout from '../../../layouts/BaseLayout.astro';
-import { getDictionary, isLocale } from '../../../i18n';
-import type { Locale } from '../../../i18n/config';
 
 const { lang } = Astro.params;
-
-if (!isLocale(lang)) {
-  return Astro.redirect('/zh/tools/');
-}
-
-const locale = lang as Locale;
-const dict = await getDictionary(locale);
+const locale = lang === 'zh' ? 'zh' : 'en';
 ---
-<BaseLayout lang={locale} dict={dict} title={dict.nav.tools}>
-  <section class="tools">
-    <h1>{dict.sections.featuredTools}</h1>
-    <div class="tool-grid">
-      {dict.toolCards.map((tool) => (
-        <article class="tool-card" id={tool.slug}>
-          <h2>{tool.title}</h2>
-          <p>{tool.description}</p>
-          <a class="tool-card__cta" href={`#${tool.slug}`}>{tool.cta}</a>
-        </article>
-      ))}
-    </div>
-  </section>
-</BaseLayout>
-<style>
-  .tools {
-    display: grid;
-    gap: 1.5rem;
-  }
-
-  .tool-grid {
-    display: grid;
-    gap: 1.5rem;
-  }
-
-  @media (min-width: 720px) {
-    .tool-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
-  .tool-card {
-    background: white;
-    border-radius: 1rem;
-    padding: 1.5rem;
-    box-shadow: 0 1rem 2rem rgba(15, 23, 42, 0.08);
-  }
-
-  .tool-card__cta {
-    display: inline-block;
-    margin-top: 1rem;
-    font-weight: 600;
-  }
-</style>
+<!doctype html>
+<html lang={locale === 'zh' ? 'zh-CN' : 'en'}>
+  <head>
+    <meta charset="utf-8" />
+    <title>Tools</title>
+  </head>
+  <body>
+    <h1>Tools ({locale})</h1>
+    <ul>
+      <li><a href="#dummy-tool">Dummy tool</a></li>
+    </ul>
+  </body>
+</html>
