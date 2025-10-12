@@ -1,26 +1,30 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import { getCollection } from 'astro:content';
 import { getDictionary, isLocale } from '../../../i18n';
 import type { Locale } from '../../../i18n/config';
+import { getCollection } from 'astro:content';
+import { formatDate } from '../../../utils';
 
 export async function getStaticPaths() {
   return ['en', 'zh'].map((lang) => ({ params: { lang } }));
 }
 
-const { lang = 'zh' } = Astro.params;
+const { lang } = Astro.params;
 if (!isLocale(lang)) {
+  // 非法语言则回退到中文博客列表
   return Astro.redirect('/zh/blog/');
 }
 const locale = lang as Locale;
+
 const dict = await getDictionary(locale);
 
-const getPublishedTime = (d?: Date) => (d ? d.getTime() : 0);
-
-// 只展示当前语言的文章：entry.id/slug 形如 "en/xxx"、"zh/xxx"
-const posts = (await getCollection('blog'))
-  .filter((entry) => entry.id.startsWith(`${locale}/`))
-  .sort((a, b) => getPublishedTime(b.data.pubDate) - getPublishedTime(a.data.pubDate));
+// 只取对应语言目录下的文章
+const posts = (await getCollection('blog', (entry) => entry.id.startsWith(`${locale}/`)))
+  .sort((a, b) => {
+    const ta = new Date(a.data.pubDate).getTime();
+    const tb = new Date(b.data.pubDate).getTime();
+    return tb - ta;
+  });
 ---
 
 <BaseLayout lang={locale} dict={dict} title={dict.nav.blog}>
@@ -28,11 +32,12 @@ const posts = (await getCollection('blog'))
     <h1>{dict.sections.latestArticles}</h1>
     <ul>
       {posts.map((p) => {
-        const [, slug] = p.slug.split('/'); // 从 "en/getting-started" 取出 "getting-started"
-        const href = `/${locale}/blog/${slug}`;
+        // p.slug 形如 "zh/getting-started" | "en/getting-started"
+        const slugOnly = p.slug.split('/').slice(1).join('/');
         return (
           <li>
-            <a href={href}>{p.data.title}</a>
+            <a href={`/${locale}/blog/${slugOnly}/`}>{p.data.title}</a>
+            <small> · {formatDate(p.data.pubDate, locale)}</small>
           </li>
         );
       })}
