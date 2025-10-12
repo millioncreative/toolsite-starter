@@ -9,7 +9,83 @@ export async function getStaticPaths() {
   // 假设集合名为 'blog'，并且文件位于 src/content/blog/en/*.md、src/content/blog/zh/*.md
   const posts = await getCollection('blog');
 
-  // 文章的 entry.slug 形如 'en/getting-started' 或 'zh/xxx'
+  // 文章的 entry.slug 形如 'en/getting-started' 或 'zh/xxx'---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getDictionary, isLocale } from '../../../i18n';
+import type { Locale } from '../../../i18n/config';
+import { getCollection } from 'astro:content';
+
+// 生成多语言静态路径
+export async function getStaticPaths() {
+  // 注意：只有当对应语言下真的有文章时才会生成路径
+  const all = await getCollection('blog');
+  const paths = all.flatMap((entry) => {
+    // 约定：id 形如 "en/getting-started" 或 "zh/xxx"
+    const [lang, ...rest] = entry.id.split('/');
+    if (!['en', 'zh'].includes(lang)) return [];
+    const slug = rest.join('/'); // "getting-started"
+    return [{ params: { lang, slug } }];
+  });
+  return paths;
+}
+
+const { lang, slug } = Astro.params;
+
+// 非法语言时做一个兜底跳转（可按需修改）
+if (!isLocale(lang)) {
+  return Astro.redirect('/zh/blog/');
+}
+
+// 读取字典与布局需要的数据
+const locale = lang as Locale;
+const dict = await getDictionary(locale);
+
+// 从 content collection 中找到当前语言 + 当前 slug 的文章
+const candidates = await getCollection('blog', (entry) =>
+  entry.id.startsWith(`${locale}/`)
+);
+
+// 兼容 slug 在子目录的情况（如 zh/tutorials/intro）
+const post =
+  candidates.find((e) => e.slug === `${locale}/${slug}`) ||
+  candidates.find((e) => e.slug.endsWith(`/${slug}`));
+
+if (!post) {
+  // 没找到文章时，你可以：404、重定向或给出占位
+  // 这里选择抛错以便 CI 立刻暴露问题
+  throw new Error(`Blog post not found: lang=${locale}, slug=${slug}`);
+}
+
+// 关键：从 render() 结果中解构出 Content，而不是从 astro:content 直接 import
+const { Content, headings } = await post.render();
+---
+
+<BaseLayout lang={locale} dict={dict} title={post.data.title ?? dict.nav.blog}>
+  <article class="prose prose-slate mx-auto">
+    <header>
+      <h1>{post.data.title}</h1>
+      {post.data.pubDate && (
+        <p><time datetime={post.data.pubDate.toISOString()}>{post.data.pubDate.toDateString()}</time></p>
+      )}
+    </header>
+
+    <Content />
+
+    {headings?.length ? (
+      <aside>
+        <h2>{dict.blog.toc ?? 'On this page'}</h2>
+        <ul>
+          {headings.map((h) => (
+            <li>
+              <a href={`#${h.slug}`}>{h.text}</a>
+            </li>
+          ))}
+        </ul>
+      </aside>
+    ) : null}
+  </article>
+</BaseLayout>
+
   return posts.map((entry) => {
     const [lang, ...rest] = entry.slug.split('/');
     const slug = rest.join('/'); // 正常应只剩一段
