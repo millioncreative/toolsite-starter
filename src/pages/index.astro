@@ -1,37 +1,19 @@
 ---
-import BaseLayout from '@layouts/BaseLayout.astro';
-import ToolCard from '@components/ToolCard.astro';
+import { defaultLocale } from '../i18n/config';
+export const prerender = true;
 
-const tools = [
-  {
-    title: '示例工具 A',
-    description: '演示如何在浏览器中运行文本处理类工具。',
-    href: '/tools#demo-a'
-  },
-  {
-    title: '示例工具 B',
-    description: '占位符计算工具，帮助快速验证 Tailwind 样式。',
-    href: '/tools#demo-b'
-  },
-  {
-    title: '示例工具 C',
-    description: '通过离线算法提供本地文件处理体验。',
-    href: '/tools#demo-c'
-  }
-];
+const to = `/${defaultLocale}/`;
+return Astro.redirect(to);
 ---
-<BaseLayout title="Toolsite Starter" description="集合浏览器本地运行工具的 Astro + Tailwind 启动模版。">
-  <section class="flex flex-col gap-8 text-center">
-    <p class="mx-auto max-w-3xl text-sm uppercase tracking-[0.4em] text-slate-400">浏览器原生 · 即开即用</p>
-    <h1 class="text-4xl font-bold leading-tight text-white md:text-5xl">欢迎来到 Toolsite Starter</h1>
-    <p class="mx-auto max-w-2xl text-lg text-slate-200">
-      该模版帮助团队快速搭建工具站点，提供统一的 UI、博客与 PWA 能力。
-      所有示例工具均为占位符，等待您的创意填充。
-    </p>
-  </section>
-  <section class="grid gap-6 md:grid-cols-3">
-    {tools.map((tool) => (
-      <ToolCard {...tool} />
-    ))}
-  </section>
-</BaseLayout>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="refresh" content={`0; url=${to}`} />
+    <link rel="canonical" href={to} />
+    <title>Redirecting…</title>
+  </head>
+  <body>
+    <p>Redirecting to <a href={to}>{to}</a>…</p>
+  </body>
+</html>
