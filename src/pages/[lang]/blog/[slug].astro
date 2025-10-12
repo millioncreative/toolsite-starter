@@ -2,72 +2,47 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { getDictionary, isLocale } from '../../../i18n';
 import type { Locale } from '../../../i18n/config';
-import { getCollection } from 'astro:content';
+import { getCollection, getEntry } from 'astro:content';
+import { formatDate } from '../../../utils';
 
-// 根据现有内容生成 /en|zh/blog/:slug
+// 生成所有语言+slug 的静态路径
 export async function getStaticPaths() {
-  const all = await getCollection('blog');
-  const paths = all.flatMap((entry) => {
-    const [lang, ...rest] = entry.id.split('/'); // 形如 "en/getting-started"
-    if (!['en', 'zh'].includes(lang)) return [];
-    const slug = rest.join('/');
-    return [{ params: { lang, slug } }];
-  });
-  return paths;
+  const posts = await getCollection('blog'); // 形如 id: "zh/getting-started"
+  const langs: Locale[] = ['en', 'zh'];
+
+  return langs.flatMap((lang) =>
+    posts
+      .filter((p) => p.id.startsWith(`${lang}/`))
+      .map((p) => {
+        const slug = p.slug.split('/').slice(1).join('/'); // "getting-started"
+        return { params: { lang, slug } };
+      })
+  );
 }
 
 const { lang, slug } = Astro.params;
-
-if (!isLocale(lang)) {
+if (!isLocale(lang) || !slug) {
   return Astro.redirect('/zh/blog/');
 }
-
 const locale = lang as Locale;
+
 const dict = await getDictionary(locale);
 
-// 找到当前语言对应的文章
-const candidates = await getCollection('blog', (entry) =>
-  entry.id.startsWith(`${locale}/`)
-);
-
-// 兼容子目录的 slug（如 zh/tutorials/intro）
-const post =
-  candidates.find((e) => e.slug === `${locale}/${slug}`) ||
-  candidates.find((e) => e.slug.endsWith(`/${slug}`));
-
-if (!post) {
-  throw new Error(`Blog post not found: lang=${locale}, slug=${slug}`);
+// 取得当前文章（集合名 blog，id 形如 "zh/getting-started"）
+const entry = await getEntry('blog', `${locale}/${slug}`);
+if (!entry) {
+  return Astro.redirect(`/${locale}/blog/`);
 }
 
-// 关键点：从 render() 结果里拿 Content，而不是 import { Content } from 'astro:content'
-const { Content, headings } = await post.render();
+// 通过 render() 获取 Content 组件（不要直接从 'astro:content' 导入 Content）
+const rendered = await entry.render();
+const { Content } = rendered;
 ---
-<BaseLayout lang={locale} dict={dict} title={post.data.title ?? dict.nav.blog}>
-  <article class="prose prose-slate mx-auto">
-    <header>
-      <h1>{post.data.title}</h1>
-      {post.data.pubDate && (
-        <p>
-          <time datetime={post.data.pubDate.toISOString()}>
-            {post.data.pubDate.toDateString()}
-          </time>
-        </p>
-      )}
-    </header>
 
+<BaseLayout lang={locale} dict={dict} title={entry.data.title} description={entry.data.description}>
+  <article>
+    <h1>{entry.data.title}</h1>
+    <p><small>{formatDate(entry.data.pubDate, locale)}</small></p>
     <Content />
-
-    {headings?.length ? (
-      <aside>
-        <h2>{dict.blog?.toc ?? 'On this page'}</h2>
-        <ul>
-          {headings.map((h) => (
-            <li>
-              <a href={`#${h.slug}`}>{h.text}</a>
-            </li>
-          ))}
-        </ul>
-      </aside>
-    ) : null}
   </article>
 </BaseLayout>
