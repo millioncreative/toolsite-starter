@@ -3,7 +3,8 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { getDictionary, isLocale } from '../../../i18n';
 import type { Locale } from '../../../i18n/config';
 import { getEntry, getEntryBySlug } from 'astro:content';
-import { formatDate } from '../../../utils/locale';
+import { formatDate } from '@utils/locale';
+
 
 export async function getStaticPaths() {
   // 从内容集合中取所有文章，然后按文件名后缀 .en / .zh 生成路径
