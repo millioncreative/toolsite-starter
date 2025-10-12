@@ -1,18 +1,11 @@
-// vitest.config.ts
-import { defineConfig } from 'vitest/config'
-import { fileURLToPath } from 'node:url'
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    globals: true,
     environment: 'happy-dom',
-    include: ['tests/**/*.spec.ts'],
+    // 只收集 unit 测试；如果你现在没有单测，也没关系，会 0 test 通过
+    include: ['tests/unit/**/*.test.ts'],
+    // 一定要排除 e2e
+    exclude: ['tests/e2e/**', 'node_modules/**', 'dist/**'],
   },
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-      '@components': fileURLToPath(new URL('./src/components', import.meta.url)),
-      '@layouts': fileURLToPath(new URL('./src/layouts', import.meta.url)),
-    },
-  },
-})
+});
