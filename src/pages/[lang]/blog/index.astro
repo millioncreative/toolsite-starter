@@ -2,8 +2,6 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { getDictionary, isLocale } from '../../../i18n';
 import type { Locale } from '../../../i18n/config';
-import { getCollection } from 'astro:content';
-import { formatDate } from '../../../utils/locale';
 
 export const prerender = true;
 
@@ -21,32 +19,17 @@ if (!isLocale(lang)) {
 const locale = lang;
 const dict = await getDictionary(locale);
 
-// 仅列出当前语言的文章，按发布时间倒序
-const posts = (await getCollection('blog', (e) => e.id.endsWith(`.${locale}`)))
-  .sort((a, b) => +b.data.pubDate - +a.data.pubDate);
-
-const dateLocale = locale === 'zh' ? 'zh-CN' : 'en-US';
+// ⚠️ 临时：不访问 content collection，直接列出已知文章 slug
+const POSTS = ['getting-started', 'workflow-tips'];
 ---
 
 <BaseLayout lang={locale} dict={dict} title={dict.nav.blog}>
   <section class="blog">
     <h1>{dict.sections.latestArticles}</h1>
     <ul>
-      {posts.map(({ slug, data }) => {
-        // slug 形如 "getting-started.en" / "getting-started.zh"
-        const clean = slug.replace(/\.(en|zh)$/i, '');
-        return (
-          <li>
-            <a href={`/${locale}/blog/${clean}/`}>{data.title}</a>
-            <small>
-              {' '}·{' '}
-              <time datetime={data.pubDate.toISOString()}>
-                {formatDate(data.pubDate, dateLocale)}
-              </time>
-            </small>
-          </li>
-        );
-      })}
+      {POSTS.map((slug) => (
+        <li><a href={`/${locale}/blog/${slug}/`}>{slug}</a></li>
+      ))}
     </ul>
   </section>
 </BaseLayout>
