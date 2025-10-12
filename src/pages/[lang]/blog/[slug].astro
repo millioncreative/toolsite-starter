@@ -2,50 +2,55 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { getDictionary, isLocale } from '../../../i18n';
 import type { Locale } from '../../../i18n/config';
-import { getEntry, getEntryBySlug } from 'astro:content';
+import { getEntryBySlug, getCollection } from 'astro:content';
 import { formatDate } from '../../../utils/locale';
 
+export const prerender = true;
 
+// 只在构建期生成 en/zh 的所有 slug 路径
 export async function getStaticPaths() {
-  // 从内容集合中取所有文章，然后按文件名后缀 .en / .zh 生成路径
-  const all = await (await import('astro:content')).getCollection('blog');
+  const all = await getCollection('blog');
   const locales = ['en', 'zh'] as const;
 
   return locales.flatMap((lang) =>
     all
       .filter((e) => e.id.endsWith(`.${lang}`))
-      .map((e) => {
-        const slug = e.id.replace(/\.(en|zh)$/, ''); // 去掉语言后缀作为 slug
+      .map(({ id }) => {
+        // e.g. "getting-started.en" -> "getting-started"
+        const slug = id.replace(/\.(en|zh)$/i, '');
         return { params: { lang, slug } };
-      })
+      }),
   );
 }
 
 const { lang, slug } = Astro.params as { lang: Locale; slug: string };
 
 if (!isLocale(lang)) {
-  // 异常 locale 时回退
+  // 非法语言时统一回退中文
   return Astro.redirect('/zh/blog/');
 }
 
-// i18n 词典
-const dict = await getDictionary(lang);
+const locale = lang;
+const dict = await getDictionary(locale);
 
-// 找到对应单篇文章（文件名规则：<slug>.<lang>.mdx）
-const entry = await getEntryBySlug('blog', `${slug}.${lang}`);
+// 读取当前语言的文章
+const entry = await getEntryBySlug('blog', `${slug}.${locale}`);
 if (!entry) {
-  throw new Error(`Post not found: ${slug}.${lang}`);
+  throw new Error(`Blog not found: ${slug}.${locale}`);
 }
 
-// 渲染 MDX 内容
-const { Content } = await entry.render();
-const { title, description, pubDate } = entry.data;
+const { Content, data } = entry;
+const dateLocale = locale === 'zh' ? 'zh-CN' : 'en-US';
 ---
 
-<BaseLayout lang={lang} dict={dict} title={title} description={description}>
-  <article class="prose max-w-none">
-    <h1>{title}</h1>
-    <p>{formatDate(pubDate, lang)}</p>
+<BaseLayout lang={locale} dict={dict} title={data.title} description={data.description}>
+  <article class="prose mx-auto">
+    <h1>{data.title}</h1>
+    <p>
+      <time datetime={data.pubDate.toISOString()}>
+        {formatDate(data.pubDate, dateLocale)}
+      </time>
+    </p>
     <Content />
   </article>
 </BaseLayout>
