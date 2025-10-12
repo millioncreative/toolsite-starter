@@ -1,35 +1,27 @@
 ---
-import BaseLayout from '../../../layouts/BaseLayout.astro';
-import { getDictionary, isLocale } from '../../../i18n';
-import type { Locale } from '../../../i18n/config';
-
+// ✅ 完全零依赖：不 import 任何模块，不读字典/布局/集合
 export const prerender = true;
 
-// 仅生成 en/zh 两个列表页
 export function getStaticPaths() {
   return ['en', 'zh'].map((lang) => ({ params: { lang } }));
 }
 
-const { lang } = Astro.params as { lang: Locale };
-
-if (!isLocale(lang)) {
-  return Astro.redirect('/zh/blog/');
-}
-
-const locale = lang;
-const dict = await getDictionary(locale);
-
-// ⚠️ 临时：不访问 content collection，直接列出已知文章 slug
+const { lang } = Astro.params;
+const locale = lang === 'zh' ? 'zh' : 'en';
 const POSTS = ['getting-started', 'workflow-tips'];
 ---
-
-<BaseLayout lang={locale} dict={dict} title={dict.nav.blog}>
-  <section class="blog">
-    <h1>{dict.sections.latestArticles}</h1>
+<!doctype html>
+<html lang={locale === 'zh' ? 'zh-CN' : 'en'}>
+  <head>
+    <meta charset="utf-8" />
+    <title>Blog</title>
+  </head>
+  <body>
+    <h1>Blog ({locale})</h1>
     <ul>
       {POSTS.map((slug) => (
-        <li><a href={`/${locale}/blog/${slug}/`}>{slug}</a></li>
+        <li><a href={`/${locale}/blog/${slug}`}>{slug}</a></li>
       ))}
     </ul>
-  </section>
-</BaseLayout>
+  </body>
+</html>
