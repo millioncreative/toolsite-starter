@@ -2,47 +2,49 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { getDictionary, isLocale } from '../../../i18n';
 import type { Locale } from '../../../i18n/config';
-import { getCollection, getEntry } from 'astro:content';
-import { formatDate } from '../../../utils';
+import { getEntry, getEntryBySlug } from 'astro:content';
+import { formatDate } from '../../../utils/locale';
 
-// 生成所有语言+slug 的静态路径
 export async function getStaticPaths() {
-  const posts = await getCollection('blog'); // 形如 id: "zh/getting-started"
-  const langs: Locale[] = ['en', 'zh'];
+  // 从内容集合中取所有文章，然后按文件名后缀 .en / .zh 生成路径
+  const all = await (await import('astro:content')).getCollection('blog');
+  const locales = ['en', 'zh'] as const;
 
-  return langs.flatMap((lang) =>
-    posts
-      .filter((p) => p.id.startsWith(`${lang}/`))
-      .map((p) => {
-        const slug = p.slug.split('/').slice(1).join('/'); // "getting-started"
+  return locales.flatMap((lang) =>
+    all
+      .filter((e) => e.id.endsWith(`.${lang}`))
+      .map((e) => {
+        const slug = e.id.replace(/\.(en|zh)$/, ''); // 去掉语言后缀作为 slug
         return { params: { lang, slug } };
       })
   );
 }
 
-const { lang, slug } = Astro.params;
-if (!isLocale(lang) || !slug) {
+const { lang, slug } = Astro.params as { lang: Locale; slug: string };
+
+if (!isLocale(lang)) {
+  // 异常 locale 时回退
   return Astro.redirect('/zh/blog/');
 }
-const locale = lang as Locale;
 
-const dict = await getDictionary(locale);
+// i18n 词典
+const dict = await getDictionary(lang);
 
-// 取得当前文章（集合名 blog，id 形如 "zh/getting-started"）
-const entry = await getEntry('blog', `${locale}/${slug}`);
+// 找到对应单篇文章（文件名规则：<slug>.<lang>.mdx）
+const entry = await getEntryBySlug('blog', `${slug}.${lang}`);
 if (!entry) {
-  return Astro.redirect(`/${locale}/blog/`);
+  throw new Error(`Post not found: ${slug}.${lang}`);
 }
 
-// 通过 render() 获取 Content 组件（不要直接从 'astro:content' 导入 Content）
-const rendered = await entry.render();
-const { Content } = rendered;
+// 渲染 MDX 内容
+const { Content } = await entry.render();
+const { title, description, pubDate } = entry.data;
 ---
 
-<BaseLayout lang={locale} dict={dict} title={entry.data.title} description={entry.data.description}>
-  <article>
-    <h1>{entry.data.title}</h1>
-    <p><small>{formatDate(entry.data.pubDate, locale)}</small></p>
+<BaseLayout lang={lang} dict={dict} title={title} description={description}>
+  <article class="prose max-w-none">
+    <h1>{title}</h1>
+    <p>{formatDate(pubDate, lang)}</p>
     <Content />
   </article>
 </BaseLayout>
