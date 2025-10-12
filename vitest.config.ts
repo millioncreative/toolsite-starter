@@ -1,17 +1,18 @@
-import { defineConfig } from 'vitest/config';
+// vitest.config.ts
+import { defineConfig } from 'vitest/config'
+import { fileURLToPath } from 'node:url'
 
 export default defineConfig({
   test: {
-    include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
-    exclude: ['tests/e2e/**', 'node_modules/**', 'dist/**'],
-    environment: 'jsdom',
-    setupFiles: ['tests/setup.ts']
-
-    environment: 'happy-dom',
-    setupFiles: ['./tests/setup.ts'],
     globals: true,
-    include: ['**/*.test.{ts,tsx}'],
-    exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
-    passWithNoTests: true
-  }
-});
+    environment: 'happy-dom',
+    include: ['tests/**/*.spec.ts'],
+  },
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@components': fileURLToPath(new URL('./src/components', import.meta.url)),
+      '@layouts': fileURLToPath(new URL('./src/layouts', import.meta.url)),
+    },
+  },
+})
