@@ -11,12 +11,12 @@ const dict: Dictionary = {
     blog: '博客'
   },
   home: {
-    heading: '常用工具一站备齐',
+    heading: '欢迎来到 Toolsite Starter',
     intro: '所有功能都在本地浏览器运行，无需登录或上传数据。',
     cta: '查看工具'
   },
   tools: {
-    heading: '精选工具',
+    heading: '工具目录',
     intro: '展示此模版中可扩展的几个小功能。'
   },
   toolCards: [
