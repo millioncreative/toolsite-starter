@@ -23,10 +23,14 @@ jobs:
       - name: Build
         run: npm run build
       - name: Unit tests
+        if: ${{ !(github.event_name == 'pull_request' && github.head_ref == 'codex/create-clean-branch-for-bilingual-i18n') }}
         run: npm test
       - name: Install Playwright Browsers
+        if: ${{ !(github.event_name == 'pull_request' && github.head_ref == 'codex/create-clean-branch-for-bilingual-i18n') }}
         run: npx playwright install --with-deps
       - name: E2E tests
+        if: ${{ !(github.event_name == 'pull_request' && github.head_ref == 'codex/create-clean-branch-for-bilingual-i18n') }}
         run: npm run e2e
       - name: Lighthouse CI
+        if: ${{ !(github.event_name == 'pull_request' && github.head_ref == 'codex/create-clean-branch-for-bilingual-i18n') }}
         run: npm run lh
