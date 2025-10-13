@@ -1,0 +1,52 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getDictionary, isLocale, type Locale } from '../../../i18n';
+import { getCollection } from 'astro:content';
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const entries = await getCollection('blog');
+  return entries
+    .map((entry) => {
+      const [entryLang, ...rest] = entry.slug.split('/');
+      if (!isLocale(entryLang) || rest.length === 0) {
+        return null;
+      }
+      return { params: { lang: entryLang, slug: rest.join('/') } };
+    })
+    .filter(Boolean) as Array<{ params: { lang: string; slug: string } }>;
+}
+
+const { lang, slug } = Astro.params;
+
+if (!isLocale(lang) || typeof slug !== 'string') {
+  return Astro.redirect('/zh/');
+}
+
+const locale = lang as Locale;
+const dict = (await getDictionary(locale)) as any;
+
+const entrySlug = `${locale}/${slug}`.replace(/\/$/, '');
+const entries = await getCollection('blog');
+const entry = entries.find((item) => item.slug === entrySlug);
+
+if (!entry) {
+  return Astro.redirect(`/${locale}/blog/`);
+}
+
+const { Content } = await entry.render();
+const displayDate = entry.data.pubDate ? new Date(entry.data.pubDate).toISOString().split('T')[0] : undefined;
+---
+<BaseLayout lang={locale} dict={dict} title={entry.data.title}>
+  <article style="padding:2rem 0;display:flex;flex-direction:column;gap:1.5rem;">
+    <header style="display:flex;flex-direction:column;gap:0.75rem;">
+      <h1 style="font-size:2rem;margin:0;">{entry.data.title}</h1>
+      {entry.data.description && <p style="max-width:40rem;">{entry.data.description}</p>}
+      {displayDate && <time datetime={displayDate} style="font-size:0.9rem;color:rgba(226,232,240,0.8);">{displayDate}</time>}
+    </header>
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>

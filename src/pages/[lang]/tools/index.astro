@@ -1,0 +1,36 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getDictionary, isLocale, type Locale } from '../../../i18n';
+
+export const prerender = true;
+
+export function getStaticPaths() {
+  return ['en', 'zh'].map((lang) => ({ params: { lang } }));
+}
+
+const { lang } = Astro.params;
+
+if (!isLocale(lang)) {
+  return Astro.redirect('/zh/');
+}
+
+const locale = lang as Locale;
+const dict = (await getDictionary(locale)) as any;
+const cards = Array.isArray(dict?.toolCards) ? dict.toolCards : [];
+---
+<BaseLayout lang={locale} dict={dict} title={dict?.tools?.heading}>
+  <section style="display:flex;flex-direction:column;gap:1.5rem;padding:2rem 0;">
+    <header style="display:flex;flex-direction:column;gap:0.75rem;">
+      <h1 style="font-size:2rem;margin:0;">{dict?.tools?.heading}</h1>
+      <p style="max-width:38rem;">{dict?.tools?.intro}</p>
+    </header>
+    <div style="display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
+      {cards.map((card: any) => (
+        <article style="padding:1.5rem;border-radius:1rem;background:rgba(148,163,184,0.15);backdrop-filter:blur(4px);">
+          <h2 style="margin-top:0;margin-bottom:0.75rem;font-size:1.25rem;">{card?.title}</h2>
+          <p style="margin:0;">{card?.description}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

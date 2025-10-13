@@ -1,0 +1,50 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getDictionary, isLocale, type Locale } from '../../../i18n';
+import { getCollection } from 'astro:content';
+
+export const prerender = true;
+
+export function getStaticPaths() {
+  return ['en', 'zh'].map((lang) => ({ params: { lang } }));
+}
+
+const { lang } = Astro.params;
+
+if (!isLocale(lang)) {
+  return Astro.redirect('/zh/');
+}
+
+const locale = lang as Locale;
+const dict = (await getDictionary(locale)) as any;
+
+const posts = await getCollection('blog', (entry) => entry.slug.startsWith(`${locale}/`));
+const sorted = posts.sort((a, b) => {
+  const aTime = a.data.pubDate ? new Date(a.data.pubDate).getTime() : 0;
+  const bTime = b.data.pubDate ? new Date(b.data.pubDate).getTime() : 0;
+  return bTime - aTime;
+});
+---
+<BaseLayout lang={locale} dict={dict} title={dict?.blog?.heading}>
+  <section style="display:flex;flex-direction:column;gap:1.5rem;padding:2rem 0;">
+    <header style="display:flex;flex-direction:column;gap:0.75rem;">
+      <h1 style="font-size:2rem;margin:0;">{dict?.blog?.heading}</h1>
+      <p style="max-width:38rem;">{dict?.blog?.intro}</p>
+    </header>
+    <ul style="list-style:none;display:flex;flex-direction:column;gap:1rem;padding:0;margin:0;">
+      {sorted.map((post) => {
+        const segments = post.slug.split('/').slice(1);
+        const slug = segments.join('/');
+        return (
+          <li style="padding:1.25rem;border-radius:1rem;background:rgba(148,163,184,0.1);">
+            <a href={`/${locale}/blog/${slug}/`} style="text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:0.5rem;">
+              <strong style="font-size:1.125rem;">{post.data.title}</strong>
+              <span style="font-size:0.9rem;color:rgba(226,232,240,0.85);">{post.data.description}</span>
+            </a>
+          </li>
+        );
+      })}
+      {sorted.length === 0 && <li>{locale === 'en' ? 'No posts yet.' : '暂无文章。'}</li>}
+    </ul>
+  </section>
+</BaseLayout>

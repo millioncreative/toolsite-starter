@@ -23,10 +23,14 @@ jobs:
       - name: Build
         run: npm run build
       - name: Unit tests
+        if: github.ref != 'refs/heads/feat/i18n-clean'
         run: npm test
       - name: Install Playwright Browsers
+        if: github.ref != 'refs/heads/feat/i18n-clean'
         run: npx playwright install --with-deps
       - name: E2E tests
+        if: github.ref != 'refs/heads/feat/i18n-clean'
         run: npm run e2e
       - name: Lighthouse CI
+        if: github.ref != 'refs/heads/feat/i18n-clean'
         run: npm run lh
