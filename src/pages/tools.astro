@@ -1,9 +1,10 @@
 ---
 import { defaultLocale } from '../i18n/config';
+import { withBase } from '../utils/paths';
 
 export const prerender = true;
 
-const to = `/${defaultLocale}/tools/`;
+const to = withBase(`/${defaultLocale}/tools/`);
 return Astro.redirect(to, 302);
 ---
 <!doctype html>

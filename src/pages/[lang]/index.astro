@@ -1,6 +1,8 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getDictionary, isLocale, type Locale } from '../../i18n';
+import { defaultLocale } from '../../i18n/config';
+import { withBase } from '../../utils/paths';
 
 export const prerender = true;
 
@@ -11,7 +13,7 @@ export function getStaticPaths() {
 const { lang } = Astro.params;
 
 if (!isLocale(lang)) {
-  return Astro.redirect('/zh/');
+  return Astro.redirect(withBase(`/${defaultLocale}/`));
 }
 
 const locale = lang as Locale;
@@ -22,7 +24,7 @@ const dict = (await getDictionary(locale)) as any;
     <h1 style="font-size:2.5rem;line-height:1.1;margin:0;">{dict?.home?.heading}</h1>
     <p style="font-size:1.125rem;max-width:40rem;">{dict?.home?.intro}</p>
     <a
-      href={`/${locale}/tools/`}
+      href={withBase(`/${locale}/tools/`)}
       style="align-self:flex-start;background:#f97316;color:#0f172a;font-weight:600;padding:0.75rem 1.5rem;border-radius:999px;text-decoration:none;"
     >
       {dict?.home?.cta}

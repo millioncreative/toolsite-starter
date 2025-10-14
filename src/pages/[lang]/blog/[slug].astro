@@ -1,6 +1,8 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { getDictionary, isLocale, type Locale } from '../../../i18n';
+import { defaultLocale } from '../../../i18n/config';
+import { withBase } from '../../../utils/paths';
 import { getCollection } from 'astro:content';
 
 export const prerender = true;
@@ -21,7 +23,7 @@ export async function getStaticPaths() {
 const { lang, slug } = Astro.params;
 
 if (!isLocale(lang) || typeof slug !== 'string') {
-  return Astro.redirect('/zh/');
+  return Astro.redirect(withBase(`/${defaultLocale}/`));
 }
 
 const locale = lang as Locale;
@@ -32,7 +34,7 @@ const entries = await getCollection('blog');
 const entry = entries.find((item) => item.slug === entrySlug);
 
 if (!entry) {
-  return Astro.redirect(`/${locale}/blog/`);
+  return Astro.redirect(withBase(`/${locale}/blog/`));
 }
 
 const { Content } = await entry.render();
