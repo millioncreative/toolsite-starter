@@ -9,7 +9,7 @@
     "preview": "astro preview --host 127.0.0.1 --port 4173",
     "test": "vitest run",
     "e2e": "playwright test",
-    "lh": "lhci autorun --config=./lighthouserc.json"
+    "lh": "lhci autorun --config=./scripts/lhci.config.cjs"
   },
   "dependencies": {},
   "devDependencies": {
