@@ -1,11 +1,20 @@
 ---
 import { defaultLocale } from '../i18n/config';
 import { withBase } from '../utils/paths';
+
 export const prerender = true;
+
 const to = withBase(`/${defaultLocale}/`);
-return Astro.redirect(to);
+const refreshContent = `0;url=${to}`;
 ---
 <!doctype html>
-<html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecting…</title>
+    <meta http-equiv="refresh" content={refreshContent} />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href={to} />
+  </head>
   <body>Redirecting to <a href={to}>{to}</a>…</body>
 </html>

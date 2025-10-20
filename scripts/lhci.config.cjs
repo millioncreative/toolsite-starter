@@ -17,16 +17,19 @@ function loadProjectConfig() {
   return { site: siteMatch[1], basePath: basePathMatch[1] };
 }
 
-const { site, basePath } = loadProjectConfig();
-const siteRoot = new URL(basePath, site);
+const { basePath } = loadProjectConfig();
 const previewOrigin = process.env.LHCI_PREVIEW_ORIGIN ?? 'http://127.0.0.1:4173/';
-const root = new URL(siteRoot.pathname, previewOrigin).href;
-const normalizedRoot = root.endsWith('/') ? root : `${root}/`;
+const previewRoot = new URL(basePath, previewOrigin).href;
+const normalizedRoot = previewRoot.endsWith('/') ? previewRoot : `${previewRoot}/`;
 
 const collect = {
   ...LIGHTHOUSE_CONFIG.ci.collect,
-  startServerCommand: 'npm run preview -- --host 0.0.0.0',
-  url: [`${normalizedRoot}zh/`, `${normalizedRoot}zh/tools/`]
+  startServerCommand: 'npm run preview -- --host 127.0.0.1',
+  url: [`${normalizedRoot}zh/index.html`, `${normalizedRoot}en/index.html`],
+  settings: {
+    ...(LIGHTHOUSE_CONFIG.ci.collect?.settings ?? {}),
+    chromeFlags: ['--headless=new', '--no-sandbox', '--disable-dev-shm-usage']
+  }
 };
 
 module.exports = {
