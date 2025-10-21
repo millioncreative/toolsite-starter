@@ -45,12 +45,17 @@ const collect = {
   ...(LIGHTHOUSE_CONFIG.ci?.collect || {}),
   startServerCommand: `npm run preview`,
   // 等待 astro 打印出 “Local  http://localhost:4321” 这一行
-  startServerReadyPattern: `Local\\s+http://localhost:${PREVIEW_PORT}`,
-  startServerReadyTimeout: 120000,
+  // 替换 startServerReadyPattern 为：
+  startServerReadyPattern: `Local\\s+http://localhost:\\d+`,
+  
+  // 同时把 PREVIEW_PORT/previewOrigin 的拼接替换为读取环境端口的方案：
+  // 这种写法最简单：直接用日志里固定到 /toolsite-starter/ 路径，而不拼端口：
+  // （LH 会在已启动的同一浏览器上下文里解析到正确 origin）
   url: [
-    `${normalizedRoot}zh/index.html`,
-    `${normalizedRoot}en/index.html`,
+    `${basePath}zh/index.html`,
+    `${basePath}en/index.html`,
   ],
+
   numberOfRuns: 1,
   settings: {
     ...(LIGHTHOUSE_CONFIG.ci?.collect?.settings || {}),
