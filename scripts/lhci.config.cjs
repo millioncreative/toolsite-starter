@@ -20,19 +20,15 @@ function loadProjectConfig() {
 
 const { basePath } = loadProjectConfig();
 
-// ---- Preview server settings (keep in sync with package.json "preview") ----
-const PREVIEW_HOST = '127.0.0.1';
-const PREVIEW_PORT = 4173;
+// —— 与 astro preview 的实际输出保持一致 ——
+// 日志显示它使用了 localhost:4321
+const PREVIEW_HOST = 'localhost';
+const PREVIEW_PORT = 4321;
 
-// If CI provides an origin, prefer it; otherwise use fixed localhost:4173
-const previewOrigin =
-  process.env.LHCI_PREVIEW_ORIGIN ?? `http://${PREVIEW_HOST}:${PREVIEW_PORT}/`;
-
-// Compose the base-aware root URL (e.g. http://127.0.0.1:4173/toolsite-starter/)
+const previewOrigin = `http://${PREVIEW_HOST}:${PREVIEW_PORT}/`;
 const previewRoot = new URL(basePath, previewOrigin).href;
 const normalizedRoot = previewRoot.endsWith('/') ? previewRoot : `${previewRoot}/`;
 
-// Merge chrome flags: keep any from lighthouserc.json and add CI-stable defaults
 const mergedChromeFlags = Array.from(
   new Set([
     ...((LIGHTHOUSE_CONFIG.ci?.collect?.settings?.chromeFlags) || []),
@@ -43,16 +39,14 @@ const mergedChromeFlags = Array.from(
   ])
 );
 
-// Build the collect block we want to export
+// 注意：不再强塞 host/port，直接跑 package.json 里的 preview，
+// 让它按自身默认行为启动（你现在的输出就是 localhost:4321）。
 const collect = {
   ...(LIGHTHOUSE_CONFIG.ci?.collect || {}),
-  // Start preview on a fixed host/port so LHCI waits for the right server.
-  startServerCommand: `npm run preview -- --host ${PREVIEW_HOST} --port ${PREVIEW_PORT}`,
-  // Wait until Astro prints the “Local: http://127.0.0.1:4173” line before auditing.
-  startServerReadyPattern: `Local.*${PREVIEW_HOST.replace(/\./g, '\\.')}:${PREVIEW_PORT}`,
-  // Give CI plenty of time to boot the preview server.
-  startServerReadyTimeout: 120000, // ms
-  // Be explicit about the audited URLs (base-aware, include index.html).
+  startServerCommand: `npm run preview`,
+  // 等待 astro 打印出 “Local  http://localhost:4321” 这一行
+  startServerReadyPattern: `Local\\s+http://localhost:${PREVIEW_PORT}`,
+  startServerReadyTimeout: 120000,
   url: [
     `${normalizedRoot}zh/index.html`,
     `${normalizedRoot}en/index.html`,
@@ -64,12 +58,10 @@ const collect = {
   },
 };
 
-// Export the final config, preserving other sections from lighthouserc.json
 module.exports = {
   ...LIGHTHOUSE_CONFIG,
   ci: {
     ...(LIGHTHOUSE_CONFIG.ci || {}),
     collect,
-    // keep whatever upload/report settings you already have in lighthouserc.json
   },
 };
