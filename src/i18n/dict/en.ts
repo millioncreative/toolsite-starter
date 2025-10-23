@@ -15,7 +15,21 @@ const dict = {
   },
   tools: {
     heading: 'Featured tools',
-    intro: 'A taste of the utilities available in this starter project.'
+    intro: 'A taste of the utilities available in this starter project.',
+    qr: {
+      title: 'QR Code Generator',
+      subtitle: 'Create QR codes entirely in your browser and download as PNG / SVG.',
+      input: 'Text or URL',
+      size: 'Size',
+      margin: 'Margin',
+      level: 'Error correction',
+      fg: 'Foreground',
+      bg: 'Background',
+      generate: 'Generate',
+      description: 'Generate QR codes quickly and privately.',
+      ariaLabel: 'QR code for {text}',
+      tooLong: 'Input is too long for this QR code size. Please shorten the text.'
+    }
   },
   toolCards: [
     {
@@ -29,6 +43,11 @@ const dict = {
     {
       title: 'Text formatter',
       description: 'Tidy up text snippets with quick transformations.'
+    },
+    {
+      title: 'QR Code Generator',
+      description: 'Generate QR codes quickly and privately.',
+      slug: 'qr'
     }
   ],
   blog: {

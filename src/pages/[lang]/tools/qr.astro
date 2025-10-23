@@ -1,0 +1,314 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getDictionary, isLocale, type Locale } from '../../../i18n';
+import { defaultLocale } from '../../../i18n/config';
+import { withBase } from '../../../utils/paths';
+
+export const prerender = true;
+
+export function getStaticPaths() {
+  return ['en', 'zh'].map((lang) => ({ params: { lang } }));
+}
+
+const { lang } = Astro.params;
+
+if (!isLocale(lang)) {
+  return Astro.redirect(withBase(`/${defaultLocale}/`));
+}
+
+const locale = lang as Locale;
+const dict = (await getDictionary(locale)) as any;
+const qrDict = dict?.tools?.qr ?? {};
+const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 'QR code for {text}';
+---
+<BaseLayout lang={locale} dict={dict} title={qrDict?.title} description={qrDict?.description}>
+  <section class="qr-container">
+    <header class="qr-header">
+      <h1>{qrDict?.title}</h1>
+      <p>{qrDict?.subtitle}</p>
+    </header>
+
+    <form class="qr-card" onSubmit={(event) => event.preventDefault()}>
+      <label>
+        {qrDict?.input}
+        <input id="qr-text" type="text" placeholder="https://…" value="" />
+      </label>
+
+      <div class="qr-row">
+        <label>
+          {qrDict?.size}
+          <input id="qr-size" type="range" min="128" max="512" step="32" value="256" />
+        </label>
+        <label>
+          {qrDict?.margin}
+          <input id="qr-margin" type="range" min="0" max="8" step="1" value="2" />
+        </label>
+        <label>
+          {qrDict?.level}
+          <select id="qr-level" value="M">
+            <option value="L">L</option>
+            <option value="M">M</option>
+            <option value="Q">Q</option>
+            <option value="H">H</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="qr-row">
+        <label>
+          {qrDict?.fg}
+          <input id="qr-fg" type="color" value="#111111" />
+        </label>
+        <label>
+          {qrDict?.bg}
+          <input id="qr-bg" type="color" value="#ffffff" />
+        </label>
+      </div>
+
+      <div id="qr-preview" class="qr-preview" data-aria-template={ariaTemplate}></div>
+      <p id="qr-error" class="qr-error" role="alert" aria-live="polite" data-too-long={qrDict?.tooLong}></p>
+
+      <div class="qr-row">
+        <button id="btn-generate" type="button">{qrDict?.generate}</button>
+        <button id="btn-png" type="button" disabled>PNG</button>
+        <button id="btn-svg" type="button" disabled>SVG</button>
+      </div>
+    </form>
+  </section>
+
+  <script type="module">
+    import QRCode from 'qrcode';
+    import { renderQRCodeCanvas } from '../../../components/tools/qr/QRCodeCanvas.tsx';
+    import { downloadDataUrl, blobDownload } from '../../../utils/download.ts';
+
+    const $ = (id) => document.getElementById(id);
+    const preview = document.getElementById('qr-preview');
+    const errorBox = document.getElementById('qr-error');
+    const pngButton = document.getElementById('btn-png');
+    const svgButton = document.getElementById('btn-svg');
+    const ariaTemplate = preview?.dataset?.ariaTemplate || 'QR code for {text}';
+    const tooLongMessage = errorBox?.dataset?.tooLong || '';
+
+    const state = {
+      text: '',
+      size: 256,
+      margin: 2,
+      level: 'M',
+      fgColor: '#111111',
+      bgColor: '#ffffff'
+    };
+
+    const parseIntValue = (value, fallback) => {
+      const parsed = parseInt(value, 10);
+      return Number.isNaN(parsed) ? fallback : parsed;
+    };
+
+    const getAriaLabel = (text) => {
+      return ariaTemplate.replace('{text}', text).replace('%s', text);
+    };
+
+    const disableDownloads = () => {
+      pngButton?.setAttribute('disabled', '');
+      svgButton?.setAttribute('disabled', '');
+    };
+
+    const enableDownloads = () => {
+      pngButton?.removeAttribute('disabled');
+      svgButton?.removeAttribute('disabled');
+    };
+
+    const readStateFromInputs = () => {
+      const textInput = /** @type {HTMLInputElement | null} */ ($('qr-text'));
+      const sizeInput = /** @type {HTMLInputElement | null} */ ($('qr-size'));
+      const marginInput = /** @type {HTMLInputElement | null} */ ($('qr-margin'));
+      const levelSelect = /** @type {HTMLSelectElement | null} */ ($('qr-level'));
+      const fgInput = /** @type {HTMLInputElement | null} */ ($('qr-fg'));
+      const bgInput = /** @type {HTMLInputElement | null} */ ($('qr-bg'));
+
+      state.text = (textInput?.value || '').trim();
+      state.size = parseIntValue(sizeInput?.value || '256', 256);
+      state.margin = parseIntValue(marginInput?.value || '2', 2);
+      state.level = (levelSelect?.value || 'M').toUpperCase();
+      state.fgColor = fgInput?.value || '#111111';
+      state.bgColor = bgInput?.value || '#ffffff';
+    };
+
+    const clearPreview = () => {
+      if (preview) {
+        preview.innerHTML = '';
+      }
+    };
+
+    const showError = (message) => {
+      if (errorBox) {
+        errorBox.textContent = message;
+      }
+    };
+
+    const resetError = () => {
+      if (errorBox) {
+        errorBox.textContent = '';
+      }
+    };
+
+    const renderQR = async () => {
+      readStateFromInputs();
+      clearPreview();
+      resetError();
+      disableDownloads();
+
+      if (!state.text) {
+        return;
+      }
+
+      try {
+        const canvas = await renderQRCodeCanvas({
+          ...state,
+          ariaLabel: getAriaLabel(state.text)
+        });
+        preview?.appendChild(canvas);
+        enableDownloads();
+      } catch (error) {
+        const rawMessage = error instanceof Error ? error.message : String(error);
+        const message = rawMessage.includes('Input too long') && tooLongMessage ? tooLongMessage : rawMessage;
+        showError(message);
+      }
+    };
+
+    document.getElementById('btn-generate')?.addEventListener('click', () => {
+      renderQR();
+    });
+
+    pngButton?.addEventListener('click', () => {
+      const canvas = preview?.querySelector('canvas');
+      if (!canvas) return;
+      const dataUrl = canvas.toDataURL('image/png');
+      downloadDataUrl(dataUrl, 'qr.png');
+    });
+
+    svgButton?.addEventListener('click', async () => {
+      const text = state.text;
+      if (!text) return;
+      try {
+        const svg = await QRCode.toString(text, {
+          margin: state.margin,
+          errorCorrectionLevel: state.level,
+          color: { dark: state.fgColor, light: state.bgColor }
+        });
+        const blob = new Blob([svg], { type: 'image/svg+xml' });
+        blobDownload(blob, 'qr.svg');
+      } catch (error) {
+        const rawMessage = error instanceof Error ? error.message : String(error);
+        const message = rawMessage.includes('Input too long') && tooLongMessage ? tooLongMessage : rawMessage;
+        showError(message);
+      }
+    });
+  </script>
+
+  <style>
+    .qr-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1rem 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .qr-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .qr-header h1 {
+      font-size: 2rem;
+      margin: 0;
+    }
+
+    .qr-header p {
+      margin: 0;
+      color: var(--muted, #64748b);
+    }
+
+    .qr-card {
+      display: grid;
+      gap: 1rem;
+      padding: 1.5rem;
+      border: 1px solid var(--border, rgba(148, 163, 184, 0.4));
+      border-radius: 1rem;
+      background: rgba(15, 23, 42, 0.02);
+      backdrop-filter: blur(4px);
+    }
+
+    .qr-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .qr-preview {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem;
+      border: 1px dashed var(--border, rgba(148, 163, 184, 0.6));
+      border-radius: 0.75rem;
+      min-height: 300px;
+      background: rgba(148, 163, 184, 0.08);
+    }
+
+    .qr-error {
+      margin: 0;
+      color: #ef4444;
+      min-height: 1.25rem;
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      font-weight: 500;
+    }
+
+    input[type='text'] {
+      padding: 0.6rem 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      font-size: 0.95rem;
+    }
+
+    input[type='range'],
+    select,
+    input[type='color'] {
+      width: 100%;
+    }
+
+    button {
+      padding: 0.65rem 1rem;
+      border-radius: 0.75rem;
+      border: none;
+      font-weight: 600;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+    }
+
+    button[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #btn-png,
+    #btn-svg {
+      background: rgba(148, 163, 184, 0.2);
+      color: inherit;
+    }
+
+    #btn-png:not([disabled]),
+    #btn-svg:not([disabled]) {
+      background: #334155;
+      color: #f8fafc;
+    }
+  </style>
+</BaseLayout>
