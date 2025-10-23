@@ -1,6 +1,8 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { getDictionary, isLocale, type Locale } from '../../../i18n';
+import { defaultLocale } from '../../../i18n/config';
+import { withBase } from '../../../utils/paths';
 import { getCollection } from 'astro:content';
 
 export const prerender = true;
@@ -12,7 +14,7 @@ export function getStaticPaths() {
 const { lang } = Astro.params;
 
 if (!isLocale(lang)) {
-  return Astro.redirect('/zh/');
+  return Astro.redirect(withBase(`/${defaultLocale}/`));
 }
 
 const locale = lang as Locale;
@@ -37,7 +39,10 @@ const sorted = posts.sort((a, b) => {
         const slug = segments.join('/');
         return (
           <li style="padding:1.25rem;border-radius:1rem;background:rgba(148,163,184,0.1);">
-            <a href={`/${locale}/blog/${slug}/`} style="text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:0.5rem;">
+            <a
+              href={withBase(`/${locale}/blog/${slug}/`)}
+              style="text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:0.5rem;"
+            >
               <strong style="font-size:1.125rem;">{post.data.title}</strong>
               <span style="font-size:0.9rem;color:rgba(226,232,240,0.85);">{post.data.description}</span>
             </a>

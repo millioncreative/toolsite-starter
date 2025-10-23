@@ -1,5 +1,6 @@
 ---
 import { locales, type Locale } from '../i18n';
+import { stripBase, withBase } from '../utils/paths';
 
 interface Props {
   lang: Locale;
@@ -7,15 +8,13 @@ interface Props {
 }
 
 const { lang, label } = Astro.props as Props;
-const currentPath = Astro.url.pathname;
+const currentPath = stripBase(Astro.url.pathname) || '/';
 const pattern = new RegExp(`^/(${locales.join('|')})(?=/|$)`);
 
 const buildHref = (target: Locale) => {
   const replaced = currentPath.replace(pattern, `/${target}`);
-  if (replaced === currentPath) {
-    return `/${target}/`;
-  }
-  return replaced;
+  const relative = replaced === currentPath ? `/${target}/` : replaced;
+  return withBase(relative);
 };
 ---
 <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.875rem;">
