@@ -19,16 +19,18 @@ function loadProjectConfig() {
 }
 
 const { basePath } = loadProjectConfig();
+const ORIGIN = `http://127.0.0.1:4173/`;
+const root = new URL(basePath, ORIGIN).href;
+const norm = root.endsWith('/') ? root : `${root}/`;
 
-// 直接用静态目录（CI 已经先跑过 build，dist 里就是最终文件）
 const collect = {
   ...(LIGHTHOUSE_CONFIG.ci?.collect || {}),
-  // 关键：不再启动 astro preview
-  staticDistDir: 'dist',
-  // 注意：因为 dist 里保留了 basePath，所以 URL 要带上 basePath
+  // 用我们自己的静态服务器把 dist 挂到 basePath 下
+  startServerCommand: 'node scripts/serve-dist.cjs',
+  startServerReadyPattern: 'READY:\\s+http://127\\.0\\.0\\.1:4173',
   url: [
-    `${basePath}zh/index.html`,
-    `${basePath}en/index.html`,
+    `${norm}zh/index.html`,
+    `${norm}en/index.html`,
   ],
   numberOfRuns: 1,
   settings: {
