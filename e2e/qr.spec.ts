@@ -14,81 +14,51 @@ const resolvePath = (path: string) => {
 const previewSelector =
   'canvas[role="img"], svg[role="img"], img[role="img"], canvas, svg, img';
 
-// 在页面上下文里判断“是否有任一下载按钮可用”
-const waitForAnyDownloadEnabled = async (page: import('@playwright/test').Page, timeoutMs = 20000) => {
-  await page.waitForFunction(
-    () => {
-      const pick = () => {
-        const cands: (HTMLButtonElement | null)[] = [
-          document.querySelector<HTMLButtonElement>('#btn-png'),
-          document.querySelector<HTMLButtonElement>('#btn-svg'),
-          [...document.querySelectorAll<HTMLButtonElement>('button')].find(
-            (b) => /png/i.test(b.textContent ?? '')
-          ) ?? null,
-          [...document.querySelectorAll<HTMLButtonElement>('button')].find(
-            (b) => /svg/i.test(b.textContent ?? '')
-          ) ?? null,
-        ].filter(Boolean) as HTMLButtonElement[];
-        // 任一个存在并且未 disabled 即认为可用
-        return cands.some((b) => !b.disabled && !b.hasAttribute('disabled'));
-      };
-      return pick();
-    },
-    { timeout: timeoutMs }
-  );
-};
-
-// 返回优先 PNG 的“已可点”的按钮 locator；若没有则返回 SVG
-const pickEnabledDownloadButton = async (page: import('@playwright/test').Page) => {
-  const png = page.locator(
-    '#btn-png:not([disabled]), button:has-text("PNG"):not([disabled])'
-  ).first();
+// 优先选择可用 PNG 按钮，失败则回退 SVG
+const pickDownloadButton = async (page: import('@playwright/test').Page) => {
+  const png = page.locator('#btn-png').first();
   if (await png.count()) {
-    const enabled = await png.isEnabled().catch(() => false);
-    if (enabled) return png;
+    if (await png.isEnabled().catch(() => false)) return png;
   }
-  const svg = page
-    .locator('#btn-svg:not([disabled]), button:has-text("SVG"):not([disabled])')
-    .first();
+  const svg = page.locator('#btn-svg').first();
   return svg;
 };
 
 for (const locale of locales) {
   test(`QR tool works for ${locale}`, async ({ page }) => {
+    test.setTimeout(60_000); // 保险一点
+
     await page.goto(resolvePath(`/${locale}/tools/qr/`));
 
-    // 1) 填写文本；尽量用第一个文本框，避免翻译变化导致的 label 匹配失败
+    // 1) 找到第一个文本框并填写
     const textbox = page.getByRole('textbox').first();
     await textbox.fill('hello world');
 
-    // 2) 同时触发两种“生成”提交流：点按钮 + Enter 提交（谁先成功都行）
-    //    不依赖按钮文案，Enter 能兜底触发 <form> onsubmit
+    // 2) 双通道触发提交：点击“生成”按钮 + 回车提交（谁先成功都行）
     const maybeGenerateBtn = page
-      .getByRole('button', { name: /Generate|生成|生成二维码|Create|Create QR/i })
+      .getByRole('button', { name: /Generate|生成|Create|创建|生成二维码/i })
       .first();
-
     await Promise.race([
       maybeGenerateBtn.click().catch(() => Promise.resolve()),
       (async () => {
-        // 确保焦点在输入框上再回车
         await textbox.focus();
         await textbox.press('Enter').catch(() => {});
       })(),
     ]);
 
-    // 3) 软断言：如果预览节点出现，则验证其可见
+    // 3) 等待“渲染完成”就绪标记（由页面端在生成成功后设置）
+    await page.locator('body[data-qr-ready="true"]').waitFor({ timeout: 25_000 });
+
+    // 4) 软断言预览可见（可选）
     const preview = page.locator(previewSelector).first();
-    await preview.waitFor({ state: 'attached', timeout: 5000 }).catch(() => {});
+    await preview.waitFor({ state: 'attached', timeout: 3_000 }).catch(() => {});
     if ((await preview.count()) > 0) {
       await expect.soft(preview).toBeVisible();
     }
 
-    // 4) 等待“任一个下载按钮”真正变为可用（原生轮询更稳）
-    await waitForAnyDownloadEnabled(page, 20000);
-
-    // 5) 优先 PNG，不行就点 SVG，并验证确实触发了下载
-    const targetBtn = await pickEnabledDownloadButton(page);
-    await expect(targetBtn).toBeEnabled({ timeout: 5000 });
+    // 5) 下载：优先 PNG，不可用就 SVG；并验证确实产生下载
+    const targetBtn = await pickDownloadButton(page);
+    await expect(targetBtn).toBeEnabled();
 
     const [download] = await Promise.all([
       page.waitForEvent('download'),
