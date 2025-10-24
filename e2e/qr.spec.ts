@@ -20,8 +20,8 @@ for (const locale of locales) {
     await page.goto(resolvePath(`/${locale}/tools/qr/`));
     await page.getByLabel(/(Text or URL|文本或链接)/).fill('hello world');
     await page.getByRole('button', { name: /Generate|生成/ }).click();
-    const canvas = page.locator('canvas');
-    await expect(canvas).toBeVisible();
+    const qrImage = page.getByRole('img', { name: /(QR code|二维码)/ });
+    await expect(qrImage).toBeVisible();
 
     const [download] = await Promise.all([
       page.waitForEvent('download'),

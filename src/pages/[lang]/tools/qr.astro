@@ -107,6 +107,13 @@ const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 
       return ariaTemplate.replace('{text}', text).replace('%s', text);
     };
 
+    const escapeAttribute = (value) =>
+      String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
     const disableDownloads = () => {
       pngButton?.setAttribute('disabled', '');
       svgButton?.setAttribute('disabled', '');
@@ -195,7 +202,14 @@ const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 
           errorCorrectionLevel: state.level,
           color: { dark: state.fgColor, light: state.bgColor }
         });
-        const blob = new Blob([svg], { type: 'image/svg+xml' });
+        const ariaLabel = getAriaLabel(text);
+        const accessibleSvg = svg.includes('aria-label=')
+          ? svg
+          : svg.replace(
+              '<svg',
+              `<svg role="img" aria-label="${escapeAttribute(ariaLabel)}"`
+            );
+        const blob = new Blob([accessibleSvg], { type: 'image/svg+xml' });
         blobDownload(blob, 'qr.svg');
       } catch (error) {
         const rawMessage = error instanceof Error ? error.message : String(error);
