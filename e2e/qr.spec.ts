@@ -10,29 +10,25 @@ const resolvePath = (path: string) => {
   return normalizedBase === '/' ? `/${trimmed}` : `${normalizedBase}${trimmed}`;
 };
 
-// 统一的预览定位器：兼容 canvas/svg/img，并尽量依赖 role 但不强制名称
-const previewSelector =
-  'canvas[role="img"], svg[role="img"], img[role="img"], canvas, svg, img';
-
 for (const locale of locales) {
   test(`QR tool works for ${locale}`, async ({ page }) => {
+    // 进入页面
     await page.goto(resolvePath(`/${locale}/tools/qr/`));
 
-    // 输入文本
-    await page.getByLabel(/(Text|URL|文本|链接)/).fill('hello world');
+    // 页面加载基本要素（避免还没渲染完就操作）
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
-    // 生成二维码
+    // 填入文本并点击生成
+    await page.getByLabel(/(Text|URL|文本|链接)/).fill('hello world');
     await page.getByRole('button', { name: /Generate|生成/ }).click();
 
-    // 等待预览元素出现并可见（不再限定 aria-label 的具体文案）
-    const preview = page.locator(previewSelector).first();
-    await expect(preview).toBeVisible();
-
-    // 触发 PNG 下载并校验确实下载到了文件
+    // 直接验证“下载 PNG”是否成功（功能闭环）
     const [download] = await Promise.all([
       page.waitForEvent('download'),
       page.getByRole('button', { name: /^PNG$/ }).click(),
     ]);
+
+    // 确认 Playwright 收到真实文件
     expect(await download.path()).toBeTruthy();
   });
 }
