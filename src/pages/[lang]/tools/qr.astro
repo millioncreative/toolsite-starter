@@ -28,6 +28,7 @@ const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 
       <p>{qrDict?.subtitle}</p>
     </header>
 
+    <!-- 留下 onSubmit 防跳转；逻辑由脚本里的 submit 监听负责 -->
     <form class="qr-card" onSubmit={(event) => event.preventDefault()}>
       <label>
         {qrDict?.input}
@@ -82,6 +83,8 @@ const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 
     import { downloadDataUrl, blobDownload } from '../../../utils/download.ts';
 
     const $ = (id) => document.getElementById(id);
+    const body = document.body;
+    const form = document.querySelector('form.qr-card');
     const preview = document.getElementById('qr-preview');
     const errorBox = document.getElementById('qr-error');
     const pngButton = document.getElementById('btn-png');
@@ -96,6 +99,11 @@ const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 
       level: 'M',
       fgColor: '#111111',
       bgColor: '#ffffff'
+    };
+
+    const setReady = (ready) => {
+      if (ready) body.setAttribute('data-qr-ready', 'true');
+      else body.removeAttribute('data-qr-ready');
     };
 
     const parseIntValue = (value, fallback) => {
@@ -141,31 +149,28 @@ const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 
     };
 
     const clearPreview = () => {
-      if (preview) {
-        preview.innerHTML = '';
-      }
+      if (preview) preview.innerHTML = '';
     };
 
     const showError = (message) => {
-      if (errorBox) {
-        errorBox.textContent = message;
-      }
+      if (errorBox) errorBox.textContent = message;
     };
 
     const resetError = () => {
-      if (errorBox) {
-        errorBox.textContent = '';
-      }
+      if (errorBox) errorBox.textContent = '';
     };
 
     const renderQR = async () => {
-      readStateFromInputs();
-      clearPreview();
-      resetError();
+      // 进入生成流程：清除就绪标记 + 禁用下载
+      setReady(false);
       disableDownloads();
+      resetError();
+      clearPreview();
+
+      readStateFromInputs();
 
       if (!state.text) {
-        return;
+        return; // 空输入：保持未就绪与禁用
       }
 
       try {
@@ -174,16 +179,40 @@ const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 
           ariaLabel: getAriaLabel(state.text)
         });
         preview?.appendChild(canvas);
+
+        // 生成成功：启用下载并设为就绪
         enableDownloads();
+        setReady(true);
       } catch (error) {
+        // 失败：禁用下载 + 去掉就绪标记 + 展示错误
+        setReady(false);
+        disableDownloads();
+
         const rawMessage = error instanceof Error ? error.message : String(error);
-        const message = rawMessage.includes('Input too long') && tooLongMessage ? tooLongMessage : rawMessage;
+        const message =
+          rawMessage.includes('Input too long') && tooLongMessage ? tooLongMessage : rawMessage;
         showError(message);
       }
     };
 
+    // 点击“生成”按钮
     document.getElementById('btn-generate')?.addEventListener('click', () => {
       renderQR();
+    });
+
+    // 表单提交（按回车时会触发）
+    form?.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      renderQR();
+    });
+
+    // 任一输入变更：清除就绪标记并禁用下载，避免使用过期结果
+    ['qr-text', 'qr-size', 'qr-margin', 'qr-level', 'qr-fg', 'qr-bg'].forEach((id) => {
+      $(id)?.addEventListener('input', () => {
+        setReady(false);
+        disableDownloads();
+        resetError();
+      });
     });
 
     pngButton?.addEventListener('click', () => {
@@ -205,15 +234,15 @@ const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 
         const ariaLabel = getAriaLabel(text);
         const accessibleSvg = svg.includes('aria-label=')
           ? svg
-          : svg.replace(
-              '<svg',
-              `<svg role="img" aria-label="${escapeAttribute(ariaLabel)}"`
-            );
+          : svg.replace('<svg', `<svg role="img" aria-label="${escapeAttribute(ariaLabel)}"`);
         const blob = new Blob([accessibleSvg], { type: 'image/svg+xml' });
         blobDownload(blob, 'qr.svg');
       } catch (error) {
+        setReady(false);
+        disableDownloads();
         const rawMessage = error instanceof Error ? error.message : String(error);
-        const message = rawMessage.includes('Input too long') && tooLongMessage ? tooLongMessage : rawMessage;
+        const message =
+          rawMessage.includes('Input too long') && tooLongMessage ? tooLongMessage : rawMessage;
         showError(message);
       }
     });
