@@ -19,7 +19,8 @@ if (!isLocale(lang)) {
 const locale = lang as Locale;
 const dict = (await getDictionary(locale)) as any;
 const qrDict = dict?.tools?.qr ?? {};
-const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 'QR code for {text}';
+const ariaTemplate =
+  typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 'QR code for {text}';
 ---
 <BaseLayout lang={locale} dict={dict} title={qrDict?.title} description={qrDict?.description}>
   <section class="qr-container">
@@ -28,7 +29,6 @@ const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 
       <p>{qrDict?.subtitle}</p>
     </header>
 
-    <!-- 留下 onSubmit 防跳转；逻辑由脚本里的 submit 监听负责 -->
     <form class="qr-card" onSubmit={(event) => event.preventDefault()}>
       <label>
         {qrDict?.input}
@@ -78,19 +78,21 @@ const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 
   </section>
 
   <script type="module">
-    import QRCode from 'qrcode';
+    // 关键：用相对路径指向本地实现，避免裸模块导入
+    import qrcode from '../../../vendor/qrcode.ts';
     import { renderQRCodeCanvas } from '../../../components/tools/qr/QRCodeCanvas.tsx';
     import { downloadDataUrl, blobDownload } from '../../../utils/download.ts';
 
     const $ = (id) => document.getElementById(id);
-    const body = document.body;
-    const form = document.querySelector('form.qr-card');
     const preview = document.getElementById('qr-preview');
     const errorBox = document.getElementById('qr-error');
     const pngButton = document.getElementById('btn-png');
     const svgButton = document.getElementById('btn-svg');
     const ariaTemplate = preview?.dataset?.ariaTemplate || 'QR code for {text}';
     const tooLongMessage = errorBox?.dataset?.tooLong || '';
+
+    const setFlag = (name, value = '') => document.body.setAttribute(name, String(value));
+    const clearFlag = (name) => document.body.removeAttribute(name);
 
     const state = {
       text: '',
@@ -99,11 +101,6 @@ const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 
       level: 'M',
       fgColor: '#111111',
       bgColor: '#ffffff'
-    };
-
-    const setReady = (ready) => {
-      if (ready) body.setAttribute('data-qr-ready', 'true');
-      else body.removeAttribute('data-qr-ready');
     };
 
     const parseIntValue = (value, fallback) => {
@@ -149,70 +146,59 @@ const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 
     };
 
     const clearPreview = () => {
-      if (preview) preview.innerHTML = '';
+      if (preview) {
+        preview.innerHTML = '';
+      }
     };
 
     const showError = (message) => {
-      if (errorBox) errorBox.textContent = message;
+      if (errorBox) {
+        errorBox.textContent = message;
+      }
+      setFlag('data-qr-error', message || 'unknown');
+      clearFlag('data-qr-ready');
     };
 
     const resetError = () => {
-      if (errorBox) errorBox.textContent = '';
+      if (errorBox) {
+        errorBox.textContent = '';
+      }
+      clearFlag('data-qr-error');
     };
 
     const renderQR = async () => {
-      // 进入生成流程：清除就绪标记 + 禁用下载
-      setReady(false);
-      disableDownloads();
-      resetError();
-      clearPreview();
-
       readStateFromInputs();
+      clearPreview();
+      resetError();
+      disableDownloads();
 
       if (!state.text) {
-        return; // 空输入：保持未就绪与禁用
+        return;
       }
 
       try {
+        // 生成 canvas（内部也会用到本地 qrcode 实现）
         const canvas = await renderQRCodeCanvas({
           ...state,
           ariaLabel: getAriaLabel(state.text)
         });
         preview?.appendChild(canvas);
-
-        // 生成成功：启用下载并设为就绪
         enableDownloads();
-        setReady(true);
-      } catch (error) {
-        // 失败：禁用下载 + 去掉就绪标记 + 展示错误
-        setReady(false);
-        disableDownloads();
 
+        // 渲染完成标记（E2E 会等待它或者按钮可点）
+        setFlag('data-qr-ready', 'true');
+      } catch (error) {
         const rawMessage = error instanceof Error ? error.message : String(error);
         const message =
           rawMessage.includes('Input too long') && tooLongMessage ? tooLongMessage : rawMessage;
         showError(message);
+        console.error('[qr] render error:', message);
       }
     };
 
-    // 点击“生成”按钮
     document.getElementById('btn-generate')?.addEventListener('click', () => {
+      setFlag('data-qr-clicked', '1');
       renderQR();
-    });
-
-    // 表单提交（按回车时会触发）
-    form?.addEventListener('submit', (ev) => {
-      ev.preventDefault();
-      renderQR();
-    });
-
-    // 任一输入变更：清除就绪标记并禁用下载，避免使用过期结果
-    ['qr-text', 'qr-size', 'qr-margin', 'qr-level', 'qr-fg', 'qr-bg'].forEach((id) => {
-      $(id)?.addEventListener('input', () => {
-        setReady(false);
-        disableDownloads();
-        resetError();
-      });
     });
 
     pngButton?.addEventListener('click', () => {
@@ -226,7 +212,7 @@ const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 
       const text = state.text;
       if (!text) return;
       try {
-        const svg = await QRCode.toString(text, {
+        const svg = await qrcode.toString(text, {
           margin: state.margin,
           errorCorrectionLevel: state.level,
           color: { dark: state.fgColor, light: state.bgColor }
@@ -234,16 +220,18 @@ const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 
         const ariaLabel = getAriaLabel(text);
         const accessibleSvg = svg.includes('aria-label=')
           ? svg
-          : svg.replace('<svg', `<svg role="img" aria-label="${escapeAttribute(ariaLabel)}"`);
+          : svg.replace(
+              '<svg',
+              `<svg role="img" aria-label="${escapeAttribute(ariaLabel)}"`
+            );
         const blob = new Blob([accessibleSvg], { type: 'image/svg+xml' });
         blobDownload(blob, 'qr.svg');
       } catch (error) {
-        setReady(false);
-        disableDownloads();
         const rawMessage = error instanceof Error ? error.message : String(error);
         const message =
           rawMessage.includes('Input too long') && tooLongMessage ? tooLongMessage : rawMessage;
         showError(message);
+        console.error('[qr] svg error:', message);
       }
     });
   </script>
@@ -257,101 +245,19 @@ const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 
       flex-direction: column;
       gap: 1.5rem;
     }
-
-    .qr-header {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .qr-header h1 {
-      font-size: 2rem;
-      margin: 0;
-    }
-
-    .qr-header p {
-      margin: 0;
-      color: var(--muted, #64748b);
-    }
-
-    .qr-card {
-      display: grid;
-      gap: 1rem;
-      padding: 1.5rem;
-      border: 1px solid var(--border, rgba(148, 163, 184, 0.4));
-      border-radius: 1rem;
-      background: rgba(15, 23, 42, 0.02);
-      backdrop-filter: blur(4px);
-    }
-
-    .qr-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 0.75rem;
-    }
-
-    .qr-preview {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 1.5rem;
-      border: 1px dashed var(--border, rgba(148, 163, 184, 0.6));
-      border-radius: 0.75rem;
-      min-height: 300px;
-      background: rgba(148, 163, 184, 0.08);
-    }
-
-    .qr-error {
-      margin: 0;
-      color: #ef4444;
-      min-height: 1.25rem;
-    }
-
-    label {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      font-weight: 500;
-    }
-
-    input[type='text'] {
-      padding: 0.6rem 0.75rem;
-      border-radius: 0.5rem;
-      border: 1px solid rgba(148, 163, 184, 0.6);
-      font-size: 0.95rem;
-    }
-
-    input[type='range'],
-    select,
-    input[type='color'] {
-      width: 100%;
-    }
-
-    button {
-      padding: 0.65rem 1rem;
-      border-radius: 0.75rem;
-      border: none;
-      font-weight: 600;
-      background: #2563eb;
-      color: white;
-      cursor: pointer;
-    }
-
-    button[disabled] {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    #btn-png,
-    #btn-svg {
-      background: rgba(148, 163, 184, 0.2);
-      color: inherit;
-    }
-
-    #btn-png:not([disabled]),
-    #btn-svg:not([disabled]) {
-      background: #334155;
-      color: #f8fafc;
-    }
+    .qr-header { display: flex; flex-direction: column; gap: 0.75rem; }
+    .qr-header h1 { font-size: 2rem; margin: 0; }
+    .qr-header p { margin: 0; color: var(--muted, #64748b); }
+    .qr-card { display: grid; gap: 1rem; padding: 1.5rem; border: 1px solid var(--border, rgba(148, 163, 184, 0.4)); border-radius: 1rem; background: rgba(15, 23, 42, 0.02); backdrop-filter: blur(4px); }
+    .qr-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; }
+    .qr-preview { display: flex; justify-content: center; align-items: center; padding: 1.5rem; border: 1px dashed var(--border, rgba(148, 163, 184, 0.6)); border-radius: 0.75rem; min-height: 300px; background: rgba(148, 163, 184, 0.08); }
+    .qr-error { margin: 0; color: #ef4444; min-height: 1.25rem; }
+    label { display: flex; flex-direction: column; gap: 0.5rem; font-weight: 500; }
+    input[type='text'] { padding: 0.6rem 0.75rem; border-radius: 0.5rem; border: 1px solid rgba(148, 163, 184, 0.6); font-size: 0.95rem; }
+    input[type='range'], select, input[type='color'] { width: 100%; }
+    button { padding: 0.65rem 1rem; border-radius: 0.75rem; border: none; font-weight: 600; background: #2563eb; color: white; cursor: pointer; }
+    button[disabled] { opacity: 0.5; cursor: not-allowed; }
+    #btn-png, #btn-svg { background: rgba(148, 163, 184, 0.2); color: inherit; }
+    #btn-png:not([disabled]), #btn-svg:not([disabled]) { background: #334155; color: #f8fafc; }
   </style>
 </BaseLayout>
