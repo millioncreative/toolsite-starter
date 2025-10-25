@@ -1,59 +1,49 @@
 // src/scripts/qr.client.ts
-import qrcode from '../vendor/qrcode.ts';
-import { renderQRCodeCanvas } from '../components/tools/qr/QRCodeCanvas.tsx';
-import { downloadDataUrl, blobDownload } from '../utils/download.ts';
+import QRCode from 'qrcode'; // 走 tsconfig paths: "qrcode": ["src/vendor/qrcode"]
+import { renderQRCodeCanvas } from '../components/tools/qr/QRCodeCanvas';
+import { downloadDataUrl, blobDownload } from '../utils/download';
 
+// DOM 快捷
 const $ = (id: string) => document.getElementById(id)!;
-const preview = document.getElementById('qr-preview') as HTMLElement | null;
-const errorBox = document.getElementById('qr-error') as HTMLElement | null;
-const pngButton = document.getElementById('btn-png') as HTMLButtonElement | null;
-const svgButton = document.getElementById('btn-svg') as HTMLButtonElement | null;
-const ariaTemplate =
-  (preview?.dataset?.ariaTemplate as string | undefined) || 'QR code for {text}';
-const tooLongMessage = (errorBox?.dataset?.tooLong as string | undefined) || '';
 
-const setFlag = (name: string, value = '') => document.body.setAttribute(name, String(value));
-const clearFlag = (name: string) => document.body.removeAttribute(name);
+const preview = $('qr-preview');
+const errorBox = $('qr-error');
+const pngButton = $('btn-png') as HTMLButtonElement;
+const svgButton = $('btn-svg') as HTMLButtonElement;
 
-type Level = 'L' | 'M' | 'Q' | 'H';
-const state: {
-  text: string;
-  size: number;
-  margin: number;
-  level: Level;
-  fgColor: string;
-  bgColor: string;
-} = {
+const ariaTemplate = preview?.dataset?.ariaTemplate || 'QR code for {text}';
+const tooLongMessage = errorBox?.dataset?.tooLong || '';
+
+const state = {
   text: '',
   size: 256,
   margin: 2,
-  level: 'M',
+  level: 'M' as 'L' | 'M' | 'Q' | 'H',
   fgColor: '#111111',
   bgColor: '#ffffff',
 };
 
 const parseIntValue = (value: string, fallback: number) => {
-  const parsed = parseInt(value, 10);
-  return Number.isNaN(parsed) ? fallback : parsed;
+  const n = parseInt(value, 10);
+  return Number.isNaN(n) ? fallback : n;
 };
 
 const getAriaLabel = (text: string) =>
   ariaTemplate.replace('{text}', text).replace('%s', text);
 
-const escapeAttr = (value: string) =>
-  String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+const escapeAttr = (v: string) =>
+  String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const disableDownloads = () => {
-  pngButton?.setAttribute('disabled', '');
-  svgButton?.setAttribute('disabled', '');
+  pngButton.setAttribute('disabled', '');
+  svgButton.setAttribute('disabled', '');
+  document.body.removeAttribute('data-qr-ready');
 };
+
 const enableDownloads = () => {
-  pngButton?.removeAttribute('disabled');
-  svgButton?.removeAttribute('disabled');
+  pngButton.removeAttribute('disabled');
+  svgButton.removeAttribute('disabled');
+  document.body.setAttribute('data-qr-ready', 'true');
 };
 
 const readStateFromInputs = () => {
@@ -64,30 +54,19 @@ const readStateFromInputs = () => {
   const fgInput = $('qr-fg') as HTMLInputElement;
   const bgInput = $('qr-bg') as HTMLInputElement;
 
-  state.text = (textInput?.value || '').trim();
-  state.size = parseIntValue(sizeInput?.value || '256', 256);
-  state.margin = parseIntValue(marginInput?.value || '2', 2);
-  state.level = ((levelSelect?.value || 'M').toUpperCase() as Level);
-  state.fgColor = fgInput?.value || '#111111';
-  state.bgColor = bgInput?.value || '#ffffff';
+  state.text = (textInput.value || '').trim();
+  state.size = parseIntValue(sizeInput.value || '256', 256);
+  state.margin = parseIntValue(marginInput.value || '2', 2);
+  state.level = (levelSelect.value || 'M').toUpperCase() as any;
+  state.fgColor = fgInput.value || '#111111';
+  state.bgColor = bgInput.value || '#ffffff';
 };
 
-const clearPreview = () => {
-  if (preview) preview.innerHTML = '';
-};
+const clearPreview = () => (preview.innerHTML = '');
+const showError = (msg: string) => (errorBox.textContent = msg);
+const resetError = () => (errorBox.textContent = '');
 
-const showError = (message: string) => {
-  if (errorBox) errorBox.textContent = message;
-  setFlag('data-qr-error', message || 'unknown');
-  clearFlag('data-qr-ready');
-};
-
-const resetError = () => {
-  if (errorBox) errorBox.textContent = '';
-  clearFlag('data-qr-error');
-};
-
-const renderQR = async () => {
+async function renderQR() {
   readStateFromInputs();
   clearPreview();
   resetError();
@@ -100,49 +79,48 @@ const renderQR = async () => {
       ...state,
       ariaLabel: getAriaLabel(state.text),
     });
-    preview?.appendChild(canvas);
+    preview.appendChild(canvas);
     enableDownloads();
-    setFlag('data-qr-ready', 'true'); // E2E 等这个或按钮可点击
-  } catch (err: unknown) {
-    const raw = err instanceof Error ? err.message : String(err);
+  } catch (err: any) {
+    const raw = err?.message ?? String(err);
     const msg = raw.includes('Input too long') && tooLongMessage ? tooLongMessage : raw;
     showError(msg);
-    console.error('[qr] render error:', msg);
   }
-};
+}
 
-// 事件绑定
-document.getElementById('btn-generate')?.addEventListener('click', () => {
-  setFlag('data-qr-clicked', '1'); // 供测试校验点击已发生
+// 生成
+$('btn-generate')?.addEventListener('click', () => {
+  document.body.setAttribute('data-qr-clicked', 'true'); // 供 E2E 断言
   renderQR();
 });
 
+// 下载 PNG
 pngButton?.addEventListener('click', () => {
-  const canvas = preview?.querySelector('canvas') as HTMLCanvasElement | null;
+  const canvas = preview.querySelector('canvas') as HTMLCanvasElement | null;
   if (!canvas) return;
   const dataUrl = canvas.toDataURL('image/png');
   downloadDataUrl(dataUrl, 'qr.png');
 });
 
+// 下载 SVG
 svgButton?.addEventListener('click', async () => {
-  const text = state.text;
-  if (!text) return;
+  const t = state.text;
+  if (!t) return;
   try {
-    const svg = await qrcode.toString(text, {
+    const svg = await QRCode.toString(t, {
       margin: state.margin,
       errorCorrectionLevel: state.level,
       color: { dark: state.fgColor, light: state.bgColor },
     });
-    const ariaLabel = getAriaLabel(text);
-    const accessibleSvg = svg.includes('aria-label=')
+    const aria = getAriaLabel(t);
+    const accessible = svg.includes('aria-label=')
       ? svg
-      : svg.replace('<svg', `<svg role="img" aria-label="${escapeAttr(ariaLabel)}"`);
-    const blob = new Blob([accessibleSvg], { type: 'image/svg+xml' });
+      : svg.replace('<svg', `<svg role="img" aria-label="${escapeAttr(aria)}"`);
+    const blob = new Blob([accessible], { type: 'image/svg+xml' });
     blobDownload(blob, 'qr.svg');
-  } catch (err: unknown) {
-    const raw = err instanceof Error ? err.message : String(err);
+  } catch (err: any) {
+    const raw = err?.message ?? String(err);
     const msg = raw.includes('Input too long') && tooLongMessage ? tooLongMessage : raw;
     showError(msg);
-    console.error('[qr] svg error:', msg);
   }
 });
