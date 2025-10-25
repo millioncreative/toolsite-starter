@@ -17,7 +17,21 @@ const dict: Dictionary = {
   },
   tools: {
     heading: '工具目录',
-    intro: '展示此模版中可扩展的几个小功能。'
+    intro: '展示此模版中可扩展的几个小功能。',
+    qr: {
+      title: '二维码生成器',
+      subtitle: '在浏览器本地生成二维码，并下载为 PNG / SVG。',
+      input: '文本或链接',
+      size: '尺寸',
+      margin: '边距',
+      level: '纠错等级',
+      fg: '前景色',
+      bg: '背景色',
+      generate: '生成',
+      description: '快速、私密地生成二维码。',
+      ariaLabel: '用于 {text} 的二维码',
+      tooLong: '文本过长，请缩短内容后再生成。'
+    }
   },
   toolCards: [
     {
@@ -31,6 +45,11 @@ const dict: Dictionary = {
     {
       title: '文本整理',
       description: '用简单操作就能格式化文本内容。'
+    },
+    {
+      title: '二维码生成器',
+      description: '快速、私密地生成二维码。',
+      slug: 'qr'
     }
   ],
   blog: {

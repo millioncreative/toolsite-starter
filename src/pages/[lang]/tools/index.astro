@@ -19,6 +19,12 @@ if (!isLocale(lang)) {
 const locale = lang as Locale;
 const dict = (await getDictionary(locale)) as any;
 const cards = Array.isArray(dict?.toolCards) ? dict.toolCards : [];
+const toHref = (card: any) => {
+  if (typeof card?.slug === 'string' && card.slug) {
+    return withBase(`/${locale}/tools/${card.slug}/`);
+  }
+  return null;
+};
 ---
 <BaseLayout lang={locale} dict={dict} title={dict?.tools?.heading}>
   <section style="display:flex;flex-direction:column;gap:1.5rem;padding:2rem 0;">
@@ -27,12 +33,28 @@ const cards = Array.isArray(dict?.toolCards) ? dict.toolCards : [];
       <p style="max-width:38rem;">{dict?.tools?.intro}</p>
     </header>
     <div style="display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
-      {cards.map((card: any) => (
-        <article style="padding:1.5rem;border-radius:1rem;background:rgba(148,163,184,0.15);backdrop-filter:blur(4px);">
-          <h2 style="margin-top:0;margin-bottom:0.75rem;font-size:1.25rem;">{card?.title}</h2>
-          <p style="margin:0;">{card?.description}</p>
-        </article>
-      ))}
+      {cards.map((card: any) => {
+        const href = toHref(card);
+        const content = (
+          <>
+            <h2 style="margin-top:0;margin-bottom:0.75rem;font-size:1.25rem;">{card?.title}</h2>
+            <p style="margin:0;">{card?.description}</p>
+          </>
+        );
+
+        return href ? (
+          <a
+            href={href}
+            style="display:block;padding:1.5rem;border-radius:1rem;background:rgba(148,163,184,0.15);backdrop-filter:blur(4px);text-decoration:none;color:inherit;"
+          >
+            {content}
+          </a>
+        ) : (
+          <article style="padding:1.5rem;border-radius:1rem;background:rgba(148,163,184,0.15);backdrop-filter:blur(4px);">
+            {content}
+          </article>
+        );
+      })}
     </div>
   </section>
 </BaseLayout>
