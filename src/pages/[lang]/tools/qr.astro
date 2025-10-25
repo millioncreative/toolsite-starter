@@ -19,8 +19,7 @@ if (!isLocale(lang)) {
 const locale = lang as Locale;
 const dict = (await getDictionary(locale)) as any;
 const qrDict = dict?.tools?.qr ?? {};
-const ariaTemplate =
-  typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 'QR code for {text}';
+const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 'QR code for {text}';
 ---
 <BaseLayout lang={locale} dict={dict} title={qrDict?.title} description={qrDict?.description}>
   <section class="qr-container">
@@ -77,24 +76,24 @@ const ariaTemplate =
     </form>
   </section>
 
-  <!-- 关键：改为外链模块，交给 Vite 处理路径与打包 -->
-  <script type="module" src="./qr.client.ts"></script>
+  <!-- 关键：改为外链模块，指向 /src 下的客户端脚本（由 Vite 打包，不会 SSR 执行） -->
+  <script type="module" src="/src/scripts/qr.client.ts"></script>
 
   <style>
     .qr-container { max-width: 900px; margin: 0 auto; padding: 2rem 1rem 3rem; display: flex; flex-direction: column; gap: 1.5rem; }
     .qr-header { display: flex; flex-direction: column; gap: 0.75rem; }
     .qr-header h1 { font-size: 2rem; margin: 0; }
     .qr-header p { margin: 0; color: var(--muted, #64748b); }
-    .qr-card { display: grid; gap: 1rem; padding: 1.5rem; border: 1px solid var(--border, rgba(148,163,184,.4)); border-radius: 1rem; background: rgba(15,23,42,.02); backdrop-filter: blur(4px); }
-    .qr-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .75rem; }
-    .qr-preview { display: flex; justify-content: center; align-items: center; padding: 1.5rem; border: 1px dashed var(--border, rgba(148,163,184,.6)); border-radius: .75rem; min-height: 300px; background: rgba(148,163,184,.08); }
+    .qr-card { display: grid; gap: 1rem; padding: 1.5rem; border: 1px solid var(--border, rgba(148, 163, 184, 0.4)); border-radius: 1rem; background: rgba(15, 23, 42, 0.02); backdrop-filter: blur(4px); }
+    .qr-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; }
+    .qr-preview { display: flex; justify-content: center; align-items: center; padding: 1.5rem; border: 1px dashed var(--border, rgba(148, 163, 184, 0.6)); border-radius: 0.75rem; min-height: 300px; background: rgba(148, 163, 184, 0.08); }
     .qr-error { margin: 0; color: #ef4444; min-height: 1.25rem; }
-    label { display: flex; flex-direction: column; gap: .5rem; font-weight: 500; }
-    input[type='text'] { padding: .6rem .75rem; border-radius: .5rem; border: 1px solid rgba(148,163,184,.6); font-size: .95rem; }
+    label { display: flex; flex-direction: column; gap: 0.5rem; font-weight: 500; }
+    input[type='text'] { padding: 0.6rem 0.75rem; border-radius: 0.5rem; border: 1px solid rgba(148, 163, 184, 0.6); font-size: 0.95rem; }
     input[type='range'], select, input[type='color'] { width: 100%; }
-    button { padding: .65rem 1rem; border-radius: .75rem; border: none; font-weight: 600; background: #2563eb; color: #fff; cursor: pointer; }
-    button[disabled] { opacity: .5; cursor: not-allowed; }
-    #btn-png, #btn-svg { background: rgba(148,163,184,.2); color: inherit; }
+    button { padding: 0.65rem 1rem; border-radius: 0.75rem; border: none; font-weight: 600; background: #2563eb; color: white; cursor: pointer; }
+    button[disabled] { opacity: 0.5; cursor: not-allowed; }
+    #btn-png, #btn-svg { background: rgba(148, 163, 184, 0.2); color: inherit; }
     #btn-png:not([disabled]), #btn-svg:not([disabled]) { background: #334155; color: #f8fafc; }
   </style>
 </BaseLayout>
