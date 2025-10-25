@@ -4,6 +4,9 @@ import { getDictionary, isLocale, type Locale } from '../../../i18n';
 import { defaultLocale } from '../../../i18n/config';
 import { withBase } from '../../../utils/paths';
 
+// 关键：把客户端脚本以 URL 形式引入，避免 Astro.resolve 兼容性问题
+import clientScriptUrl from '../../../scripts/qr.client.ts?url';
+
 export const prerender = true;
 
 export function getStaticPaths() {
@@ -77,8 +80,8 @@ const ariaTemplate =
     </form>
   </section>
 
-  {/** 关键：用 Astro.resolve 让 Vite 打包客户端脚本与其依赖（包括 "qrcode" 别名） */}
-  <script type="module" src={Astro.resolve('../../../scripts/qr.client.ts')}></script>
+  {/** 这里用预编译出的 URL，避免 Astro.resolve 兼容性问题，同时确保被 Vite 打包，从而正确解析 `qrcode` 模块 */}
+  <script type="module" src={clientScriptUrl}></script>
 
   <style>
     .qr-container { max-width: 900px; margin: 0 auto; padding: 2rem 1rem 3rem; display: flex; flex-direction: column; gap: 1.5rem; }
