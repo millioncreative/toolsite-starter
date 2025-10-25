@@ -19,7 +19,8 @@ if (!isLocale(lang)) {
 const locale = lang as Locale;
 const dict = (await getDictionary(locale)) as any;
 const qrDict = dict?.tools?.qr ?? {};
-const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 'QR code for {text}';
+const ariaTemplate =
+  typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 'QR code for {text}';
 ---
 <BaseLayout lang={locale} dict={dict} title={qrDict?.title} description={qrDict?.description}>
   <section class="qr-container">
@@ -76,8 +77,11 @@ const ariaTemplate = typeof qrDict?.ariaLabel === 'string' ? qrDict.ariaLabel : 
     </form>
   </section>
 
-  <!-- 关键：改为外链模块，指向 /src 下的客户端脚本（由 Vite 打包，不会 SSR 执行） -->
-  <script type="module" src="/src/scripts/qr.client.ts"></script>
+  <!-- 关键修复：用 Astro.resolve 让 Vite/astro 处理路径与打包，避免 404 -->
+  <script
+    type="module"
+    src={Astro.resolve('../../../scripts/qr.client.ts')}
+  ></script>
 
   <style>
     .qr-container { max-width: 900px; margin: 0 auto; padding: 2rem 1rem 3rem; display: flex; flex-direction: column; gap: 1.5rem; }
