@@ -77,11 +77,10 @@ const ariaTemplate =
     </form>
   </section>
 
-  <!-- 关键修复：用 Astro.resolve 让 Vite/astro 处理路径与打包，避免 404 -->
-  <script
-    type="module"
-    src={Astro.resolve('../../../scripts/qr.client.ts')}
-  ></script>
+  <!-- 修复点：改为内联 ES Module 导入，交给 Vite/astro 解析与打包 -->
+  <script type="module">
+    import '../../../scripts/qr.client.ts';
+  </script>
 
   <style>
     .qr-container { max-width: 900px; margin: 0 auto; padding: 2rem 1rem 3rem; display: flex; flex-direction: column; gap: 1.5rem; }
