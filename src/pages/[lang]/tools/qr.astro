@@ -77,9 +77,134 @@ const ariaTemplate =
     </form>
   </section>
 
-  <!-- 修复点：改为内联 ES Module 导入，交给 Vite/astro 解析与打包 -->
+  <!-- 关键：回到内联模块脚本，交给 Vite 打包，杜绝 404 -->
   <script type="module">
-    import '../../../scripts/qr.client.ts';
+    import QRCode from 'qrcode';
+    import { renderQRCodeCanvas } from '../../../components/tools/qr/QRCodeCanvas.tsx';
+    import { downloadDataUrl, blobDownload } from '../../../utils/download.ts';
+
+    const $ = (id) => document.getElementById(id);
+    const preview = document.getElementById('qr-preview');
+    const errorBox = document.getElementById('qr-error');
+    const pngButton = document.getElementById('btn-png');
+    const svgButton = document.getElementById('btn-svg');
+    const ariaTemplate = preview?.dataset?.ariaTemplate || 'QR code for {text}';
+    const tooLongMessage = errorBox?.dataset?.tooLong || '';
+
+    const state = {
+      text: '',
+      size: 256,
+      margin: 2,
+      level: 'M',
+      fgColor: '#111111',
+      bgColor: '#ffffff'
+    };
+
+    const parseIntValue = (value, fallback) => {
+      const parsed = parseInt(value, 10);
+      return Number.isNaN(parsed) ? fallback : parsed;
+    };
+
+    const getAriaLabel = (text) =>
+      (ariaTemplate.replace('{text}', text)).replace('%s', text);
+
+    const escapeAttribute = (value) =>
+      String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    const disableDownloads = () => {
+      pngButton?.setAttribute('disabled', '');
+      svgButton?.setAttribute('disabled', '');
+      document.body.removeAttribute('data-qr-ready');
+    };
+
+    const enableDownloads = () => {
+      pngButton?.removeAttribute('disabled');
+      svgButton?.removeAttribute('disabled');
+      document.body.setAttribute('data-qr-ready', 'true');
+    };
+
+    const readStateFromInputs = () => {
+      const textInput = /** @type {HTMLInputElement | null} */ ($('qr-text'));
+      const sizeInput = /** @type {HTMLInputElement | null} */ ($('qr-size'));
+      const marginInput = /** @type {HTMLInputElement | null} */ ($('qr-margin'));
+      const levelSelect = /** @type {HTMLSelectElement | null} */ ($('qr-level'));
+      const fgInput = /** @type {HTMLInputElement | null} */ ($('qr-fg'));
+      const bgInput = /** @type {HTMLInputElement | null} */ ($('qr-bg'));
+
+      state.text = (textInput?.value || '').trim();
+      state.size = parseIntValue(sizeInput?.value || '256', 256);
+      state.margin = parseIntValue(marginInput?.value || '2', 2);
+      state.level = (levelSelect?.value || 'M').toUpperCase();
+      state.fgColor = fgInput?.value || '#111111';
+      state.bgColor = bgInput?.value || '#ffffff';
+    };
+
+    const clearPreview = () => { if (preview) preview.innerHTML = ''; };
+    const showError = (message) => { if (errorBox) errorBox.textContent = message; };
+    const resetError = () => { if (errorBox) errorBox.textContent = ''; };
+
+    const renderQR = async () => {
+      readStateFromInputs();
+      clearPreview();
+      resetError();
+      disableDownloads();
+
+      if (!state.text) return;
+
+      try {
+        const canvas = await renderQRCodeCanvas({
+          ...state,
+          ariaLabel: getAriaLabel(state.text)
+        });
+        preview?.appendChild(canvas);
+        enableDownloads();
+      } catch (error) {
+        const raw = error instanceof Error ? error.message : String(error);
+        const msg = raw.includes('Input too long') && tooLongMessage ? tooLongMessage : raw;
+        showError(msg);
+      }
+    };
+
+    // 点击生成：设置「已点击」标记，触发渲染
+    document.getElementById('btn-generate')?.addEventListener('click', () => {
+      document.body.setAttribute('data-qr-clicked', 'true');
+      renderQR();
+    });
+
+    // 下载 PNG
+    pngButton?.addEventListener('click', () => {
+      const canvas = preview?.querySelector('canvas');
+      if (!canvas) return;
+      const dataUrl = canvas.toDataURL('image/png');
+      downloadDataUrl(dataUrl, 'qr.png');
+    });
+
+    // 下载 SVG
+    svgButton?.addEventListener('click', async () => {
+      const text = state.text;
+      if (!text) return;
+      try {
+        const svg = await QRCode.toString(text, {
+          margin: state.margin,
+          errorCorrectionLevel: state.level,
+          color: { dark: state.fgColor, light: state.bgColor }
+        });
+        const ariaLabel = getAriaLabel(text);
+        const accessibleSvg = svg.includes('aria-label=')
+          ? svg
+          : svg.replace('<svg', `<svg role="img" aria-label="${escapeAttribute(ariaLabel)}"`);
+        const blob = new Blob([accessibleSvg], { type: 'image/svg+xml' });
+        blobDownload(blob, 'qr.svg');
+      } catch (error) {
+        const raw = error instanceof Error ? error.message : String(error);
+        const msg = raw.includes('Input too long') && tooLongMessage ? tooLongMessage : raw;
+        showError(msg);
+      }
+    });
   </script>
 
   <style>
