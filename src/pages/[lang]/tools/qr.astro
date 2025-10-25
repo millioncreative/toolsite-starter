@@ -77,187 +77,24 @@ const ariaTemplate =
     </form>
   </section>
 
-  <script type="module">
-    // 关键：用相对路径指向本地实现，避免裸模块导入
-    import qrcode from '../../../vendor/qrcode.ts';
-    import { renderQRCodeCanvas } from '../../../components/tools/qr/QRCodeCanvas.tsx';
-    import { downloadDataUrl, blobDownload } from '../../../utils/download.ts';
-
-    const $ = (id) => document.getElementById(id);
-    const preview = document.getElementById('qr-preview');
-    const errorBox = document.getElementById('qr-error');
-    const pngButton = document.getElementById('btn-png');
-    const svgButton = document.getElementById('btn-svg');
-    const ariaTemplate = preview?.dataset?.ariaTemplate || 'QR code for {text}';
-    const tooLongMessage = errorBox?.dataset?.tooLong || '';
-
-    const setFlag = (name, value = '') => document.body.setAttribute(name, String(value));
-    const clearFlag = (name) => document.body.removeAttribute(name);
-
-    const state = {
-      text: '',
-      size: 256,
-      margin: 2,
-      level: 'M',
-      fgColor: '#111111',
-      bgColor: '#ffffff'
-    };
-
-    const parseIntValue = (value, fallback) => {
-      const parsed = parseInt(value, 10);
-      return Number.isNaN(parsed) ? fallback : parsed;
-    };
-
-    const getAriaLabel = (text) => {
-      return ariaTemplate.replace('{text}', text).replace('%s', text);
-    };
-
-    const escapeAttribute = (value) =>
-      String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-
-    const disableDownloads = () => {
-      pngButton?.setAttribute('disabled', '');
-      svgButton?.setAttribute('disabled', '');
-    };
-
-    const enableDownloads = () => {
-      pngButton?.removeAttribute('disabled');
-      svgButton?.removeAttribute('disabled');
-    };
-
-    const readStateFromInputs = () => {
-      const textInput = /** @type {HTMLInputElement | null} */ ($('qr-text'));
-      const sizeInput = /** @type {HTMLInputElement | null} */ ($('qr-size'));
-      const marginInput = /** @type {HTMLInputElement | null} */ ($('qr-margin'));
-      const levelSelect = /** @type {HTMLSelectElement | null} */ ($('qr-level'));
-      const fgInput = /** @type {HTMLInputElement | null} */ ($('qr-fg'));
-      const bgInput = /** @type {HTMLInputElement | null} */ ($('qr-bg'));
-
-      state.text = (textInput?.value || '').trim();
-      state.size = parseIntValue(sizeInput?.value || '256', 256);
-      state.margin = parseIntValue(marginInput?.value || '2', 2);
-      state.level = (levelSelect?.value || 'M').toUpperCase();
-      state.fgColor = fgInput?.value || '#111111';
-      state.bgColor = bgInput?.value || '#ffffff';
-    };
-
-    const clearPreview = () => {
-      if (preview) {
-        preview.innerHTML = '';
-      }
-    };
-
-    const showError = (message) => {
-      if (errorBox) {
-        errorBox.textContent = message;
-      }
-      setFlag('data-qr-error', message || 'unknown');
-      clearFlag('data-qr-ready');
-    };
-
-    const resetError = () => {
-      if (errorBox) {
-        errorBox.textContent = '';
-      }
-      clearFlag('data-qr-error');
-    };
-
-    const renderQR = async () => {
-      readStateFromInputs();
-      clearPreview();
-      resetError();
-      disableDownloads();
-
-      if (!state.text) {
-        return;
-      }
-
-      try {
-        // 生成 canvas（内部也会用到本地 qrcode 实现）
-        const canvas = await renderQRCodeCanvas({
-          ...state,
-          ariaLabel: getAriaLabel(state.text)
-        });
-        preview?.appendChild(canvas);
-        enableDownloads();
-
-        // 渲染完成标记（E2E 会等待它或者按钮可点）
-        setFlag('data-qr-ready', 'true');
-      } catch (error) {
-        const rawMessage = error instanceof Error ? error.message : String(error);
-        const message =
-          rawMessage.includes('Input too long') && tooLongMessage ? tooLongMessage : rawMessage;
-        showError(message);
-        console.error('[qr] render error:', message);
-      }
-    };
-
-    document.getElementById('btn-generate')?.addEventListener('click', () => {
-      setFlag('data-qr-clicked', '1');
-      renderQR();
-    });
-
-    pngButton?.addEventListener('click', () => {
-      const canvas = preview?.querySelector('canvas');
-      if (!canvas) return;
-      const dataUrl = canvas.toDataURL('image/png');
-      downloadDataUrl(dataUrl, 'qr.png');
-    });
-
-    svgButton?.addEventListener('click', async () => {
-      const text = state.text;
-      if (!text) return;
-      try {
-        const svg = await qrcode.toString(text, {
-          margin: state.margin,
-          errorCorrectionLevel: state.level,
-          color: { dark: state.fgColor, light: state.bgColor }
-        });
-        const ariaLabel = getAriaLabel(text);
-        const accessibleSvg = svg.includes('aria-label=')
-          ? svg
-          : svg.replace(
-              '<svg',
-              `<svg role="img" aria-label="${escapeAttribute(ariaLabel)}"`
-            );
-        const blob = new Blob([accessibleSvg], { type: 'image/svg+xml' });
-        blobDownload(blob, 'qr.svg');
-      } catch (error) {
-        const rawMessage = error instanceof Error ? error.message : String(error);
-        const message =
-          rawMessage.includes('Input too long') && tooLongMessage ? tooLongMessage : rawMessage;
-        showError(message);
-        console.error('[qr] svg error:', message);
-      }
-    });
-  </script>
+  <!-- 关键：改为外链模块，交给 Vite 处理路径与打包 -->
+  <script type="module" src="./qr.client.ts"></script>
 
   <style>
-    .qr-container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 2rem 1rem 3rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
+    .qr-container { max-width: 900px; margin: 0 auto; padding: 2rem 1rem 3rem; display: flex; flex-direction: column; gap: 1.5rem; }
     .qr-header { display: flex; flex-direction: column; gap: 0.75rem; }
     .qr-header h1 { font-size: 2rem; margin: 0; }
     .qr-header p { margin: 0; color: var(--muted, #64748b); }
-    .qr-card { display: grid; gap: 1rem; padding: 1.5rem; border: 1px solid var(--border, rgba(148, 163, 184, 0.4)); border-radius: 1rem; background: rgba(15, 23, 42, 0.02); backdrop-filter: blur(4px); }
-    .qr-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; }
-    .qr-preview { display: flex; justify-content: center; align-items: center; padding: 1.5rem; border: 1px dashed var(--border, rgba(148, 163, 184, 0.6)); border-radius: 0.75rem; min-height: 300px; background: rgba(148, 163, 184, 0.08); }
+    .qr-card { display: grid; gap: 1rem; padding: 1.5rem; border: 1px solid var(--border, rgba(148,163,184,.4)); border-radius: 1rem; background: rgba(15,23,42,.02); backdrop-filter: blur(4px); }
+    .qr-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .75rem; }
+    .qr-preview { display: flex; justify-content: center; align-items: center; padding: 1.5rem; border: 1px dashed var(--border, rgba(148,163,184,.6)); border-radius: .75rem; min-height: 300px; background: rgba(148,163,184,.08); }
     .qr-error { margin: 0; color: #ef4444; min-height: 1.25rem; }
-    label { display: flex; flex-direction: column; gap: 0.5rem; font-weight: 500; }
-    input[type='text'] { padding: 0.6rem 0.75rem; border-radius: 0.5rem; border: 1px solid rgba(148, 163, 184, 0.6); font-size: 0.95rem; }
+    label { display: flex; flex-direction: column; gap: .5rem; font-weight: 500; }
+    input[type='text'] { padding: .6rem .75rem; border-radius: .5rem; border: 1px solid rgba(148,163,184,.6); font-size: .95rem; }
     input[type='range'], select, input[type='color'] { width: 100%; }
-    button { padding: 0.65rem 1rem; border-radius: 0.75rem; border: none; font-weight: 600; background: #2563eb; color: white; cursor: pointer; }
-    button[disabled] { opacity: 0.5; cursor: not-allowed; }
-    #btn-png, #btn-svg { background: rgba(148, 163, 184, 0.2); color: inherit; }
+    button { padding: .65rem 1rem; border-radius: .75rem; border: none; font-weight: 600; background: #2563eb; color: #fff; cursor: pointer; }
+    button[disabled] { opacity: .5; cursor: not-allowed; }
+    #btn-png, #btn-svg { background: rgba(148,163,184,.2); color: inherit; }
     #btn-png:not([disabled]), #btn-svg:not([disabled]) { background: #334155; color: #f8fafc; }
   </style>
 </BaseLayout>
