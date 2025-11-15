@@ -18,6 +18,29 @@ const dict: Dictionary = {
   tools: {
     heading: '工具目录',
     intro: '展示此模版中可扩展的几个小功能。',
+    text: {
+      title: '文本整理',
+      subtitle: '用简单操作快速规整文本片段。',
+      description: '支持去首尾空白、压缩空格、去空行、去重、大小写转换、排序与导出。',
+      input: '输入',
+      placeholder: '在此粘贴文本…',
+      trim: '去首尾空白',
+      collapse: '压缩空格',
+      removeBlank: '去空行',
+      dedupe: '去重（按行）',
+      case: '大小写',
+      caseNone: '保持不变',
+      caseUpper: '全大写',
+      caseLower: '全小写',
+      caseTitle: '标题式',
+      sort: '按行排序',
+      sortNone: '保持不变',
+      sortAsc: '升序（A→Z）',
+      sortDesc: '降序（Z→A）',
+      format: '整理',
+      copy: '复制',
+      ariaPreview: '已整理文本的预览'
+    },
     qr: {
       title: '二维码生成器',
       subtitle: '在浏览器本地生成二维码，并下载为 PNG / SVG。',
@@ -44,7 +67,8 @@ const dict: Dictionary = {
     },
     {
       title: '文本整理',
-      description: '用简单操作就能格式化文本内容。'
+      description: '支持去首尾空白、压缩空格、去空行、去重、大小写转换、排序与导出。',
+      slug: 'text'
     },
     {
       title: '二维码生成器',

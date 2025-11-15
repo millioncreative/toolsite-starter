@@ -16,6 +16,29 @@ const dict = {
   tools: {
     heading: 'Featured tools',
     intro: 'A taste of the utilities available in this starter project.',
+    text: {
+      title: 'Text formatter',
+      subtitle: 'Tidy up text snippets with quick transformations.',
+      description: 'Trim, collapse spaces, dedupe lines, change case, sort, and export.',
+      input: 'Input',
+      placeholder: 'Paste text here…',
+      trim: 'Trim ends',
+      collapse: 'Collapse spaces',
+      removeBlank: 'Remove blank lines',
+      dedupe: 'Deduplicate lines',
+      case: 'Case',
+      caseNone: 'Keep',
+      caseUpper: 'UPPER',
+      caseLower: 'lower',
+      caseTitle: 'Title Case',
+      sort: 'Sort lines',
+      sortNone: 'Keep',
+      sortAsc: 'A → Z',
+      sortDesc: 'Z → A',
+      format: 'Format',
+      copy: 'Copy',
+      ariaPreview: 'Preview of formatted text'
+    },
     qr: {
       title: 'QR Code Generator',
       subtitle: 'Create QR codes entirely in your browser and download as PNG / SVG.',
@@ -42,7 +65,8 @@ const dict = {
     },
     {
       title: 'Text formatter',
-      description: 'Tidy up text snippets with quick transformations.'
+      description: 'Trim, collapse spaces, dedupe lines, change case, sort, and export.',
+      slug: 'text'
     },
     {
       title: 'QR Code Generator',
